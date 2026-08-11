@@ -46,3 +46,6 @@ next-env.d.ts
 public/samples/
 .agents/
 skills-lock.json
+
+# Remotion promo — keep local, do not publish
+giver-promo/
