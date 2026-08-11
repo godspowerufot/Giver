@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useId, useState } from "react";
+import { useToast } from "@/context/ToastContext";
+import { SPREADSHEET_TOAST } from "@/lib/messages";
 import { useLedger } from "@/hooks/useLedger";
 
 function isExcelOrCsv(file: File) {
@@ -10,9 +12,9 @@ function isExcelOrCsv(file: File) {
 
 export function FileDropzone() {
   const { loadFile, status, error } = useLedger();
+  const { toast } = useToast();
   const inputId = useId();
   const [dragging, setDragging] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
   const busy = status === "parsing";
 
   const onFiles = useCallback(
@@ -20,15 +22,12 @@ export function FileDropzone() {
       const file = files?.[0];
       if (!file) return;
       if (!isExcelOrCsv(file)) {
-        setLocalError(
-          "Please upload Excel (.xlsx) or CSV (.csv). PDF and other formats are not supported.",
-        );
+        toast(SPREADSHEET_TOAST, "error");
         return;
       }
-      setLocalError(null);
       await loadFile(file);
     },
-    [loadFile],
+    [loadFile, toast],
   );
 
   return (
@@ -50,7 +49,6 @@ export function FileDropzone() {
             : "border-white/20 bg-white/[0.03] hover:border-white/40"
         }`}
       >
-        {/* Decorative glass veil — never capture taps */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 lightning-veil opacity-40"
@@ -64,7 +62,6 @@ export function FileDropzone() {
             columns or signed amounts are auto-detected.
           </p>
           <div className="relative z-20 mt-6 flex justify-center sm:mt-8">
-            {/* Native label → file input works reliably on mobile (no programmatic click) */}
             <label
               htmlFor={inputId}
               className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-white/20 bg-white px-4 py-2.5 text-sm font-medium tracking-wide text-black shadow-[0_0_24px_rgba(255,255,255,0.18)] transition duration-200 sm:w-auto ${
@@ -91,10 +88,8 @@ export function FileDropzone() {
           </p>
         </div>
       </div>
-      {localError || error ? (
-        <p className="mt-4 text-center text-sm text-red-300">
-          {localError || error}
-        </p>
+      {error ? (
+        <p className="mt-4 text-center text-sm text-red-300">{error}</p>
       ) : null}
     </div>
   );

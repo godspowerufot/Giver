@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useId, useState, type ReactNode } from "react";
+import { useCallback, useId, type ReactNode } from "react";
 import { DashboardPreview } from "@/components/landing/DashboardPreview";
+import { useToast } from "@/context/ToastContext";
 import { useLedger } from "@/hooks/useLedger";
+import { SPREADSHEET_TOAST } from "@/lib/messages";
 
 function isExcelOrCsv(file: File) {
   const name = file.name.toLowerCase();
@@ -34,8 +36,8 @@ function UploadLabel({
 
 export function LandingPage() {
   const { loadFile, status, error } = useLedger();
+  const { toast } = useToast();
   const inputId = useId();
-  const [localError, setLocalError] = useState<string | null>(null);
   const busy = status === "parsing";
 
   const onFiles = useCallback(
@@ -43,15 +45,12 @@ export function LandingPage() {
       const file = files?.[0];
       if (!file) return;
       if (!isExcelOrCsv(file)) {
-        setLocalError(
-          "Please upload Excel (.xlsx) or CSV (.csv). PDF and other formats are not supported.",
-        );
+        toast(SPREADSHEET_TOAST, "error");
         return;
       }
-      setLocalError(null);
       await loadFile(file);
     },
-    [loadFile],
+    [loadFile, toast],
   );
 
   return (
@@ -111,8 +110,8 @@ export function LandingPage() {
                 Excel (.xlsx) or CSV · not PDF · stays on this device
               </p>
             </div>
-            {localError || error ? (
-              <p className="mt-4 text-sm text-red-300">{localError || error}</p>
+            {error ? (
+              <p className="mt-4 text-sm text-red-300">{error}</p>
             ) : null}
           </div>
 

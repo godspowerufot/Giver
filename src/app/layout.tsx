@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit, Syne } from "next/font/google";
 import { LedgerProvider } from "@/context/LedgerContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { AppShell } from "@/components/layout/AppShell";
+import { ToastHost } from "@/components/ui/ToastHost";
 import "./globals.css";
 
 const display = Syne({
@@ -34,9 +36,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
       <body className="min-h-full overflow-x-clip">
-        <LedgerProvider>
-          <AppShell>{children}</AppShell>
-        </LedgerProvider>
+        <ToastProvider>
+          <LedgerProvider>
+            <AppShell>{children}</AppShell>
+            <ToastHost />
+          </LedgerProvider>
+        </ToastProvider>
       </body>
     </html>
   );

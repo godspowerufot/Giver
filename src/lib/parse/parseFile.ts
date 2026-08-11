@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import Papa from "papaparse";
+import { SPREADSHEET_TOAST } from "@/lib/messages";
 import type { Direction, StatementMeta, Transaction } from "@/lib/types";
 import { detectColumns, parseDirectionToken, type ColumnMap } from "./detectColumns";
 import { classifyKind, extractCounterparty } from "./extractCounterparty";
@@ -253,7 +254,5 @@ export async function parseLedgerFile(file: File): Promise<ParseResult> {
   if (name.endsWith(".xlsx")) {
     return parseWorkbook(file);
   }
-  throw new Error(
-    "Please upload Excel (.xlsx) or CSV (.csv). PDF and other formats are not supported.",
-  );
+  throw new Error(SPREADSHEET_TOAST);
 }

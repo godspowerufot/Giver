@@ -9,8 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import { computeLedger } from "@/lib/analytics/computeLedger";
+import { SPREADSHEET_TOAST } from "@/lib/messages";
 import { parseLedgerFile } from "@/lib/parse/parseFile";
 import type { LedgerState } from "@/lib/types";
+import { useToast } from "@/context/ToastContext";
 
 export type DashboardView = "overview" | "people" | "transactions" | "insights";
 
@@ -37,6 +39,7 @@ const initialState: LedgerState = {
 const LedgerContext = createContext<LedgerContextValue | null>(null);
 
 export function LedgerProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
   const [state, setState] = useState<LedgerState>(initialState);
   const [view, setViewState] = useState<DashboardView>("overview");
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
@@ -63,13 +66,18 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
       setSelectedPerson(null);
       setSidebarOpen(false);
     } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to parse file";
+      if (message === SPREADSHEET_TOAST) {
+        toast(SPREADSHEET_TOAST, "error");
+      }
       setState({
         ...initialState,
         status: "error",
-        error: err instanceof Error ? err.message : "Failed to parse file",
+        error: message,
       });
     }
-  }, []);
+  }, [toast]);
 
   const reset = useCallback(() => {
     setState(initialState);
