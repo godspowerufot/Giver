@@ -12,9 +12,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!ready) {
     return (
       <div className="relative min-h-dvh overflow-x-clip bg-[#070708] text-zinc-100">
-        <div className="pointer-events-none absolute inset-0 lightning-field" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[320px] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12),transparent_55%)] sm:h-[420px]" />
-        <header className="relative z-10 border-b border-white/10 pt-[env(safe-area-inset-top)]">
+        <div className="pointer-events-none absolute inset-0 z-0 lightning-field" aria-hidden />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[320px] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12),transparent_55%)] sm:h-[420px]"
+          aria-hidden
+        />
+        <header className="relative z-20 border-b border-white/10 pt-[env(safe-area-inset-top)]">
           <div className="mx-auto flex max-w-3xl items-center px-4 py-5 sm:px-8 sm:py-6">
             <div>
               <p className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.04em] text-white sm:text-4xl">
@@ -26,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="relative z-10 mx-auto w-full max-w-3xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-10">
+        <main className="relative z-20 mx-auto w-full max-w-3xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-10">
           {children}
         </main>
       </div>

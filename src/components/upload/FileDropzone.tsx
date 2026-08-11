@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { useCallback, useId, useState } from "react";
 import { useLedger } from "@/hooks/useLedger";
 
 function isExcelOrCsv(file: File) {
@@ -11,7 +10,7 @@ function isExcelOrCsv(file: File) {
 
 export function FileDropzone() {
   const { loadFile, status, error } = useLedger();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const [dragging, setDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const busy = status === "parsing";
@@ -33,7 +32,7 @@ export function FileDropzone() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="relative z-20 mx-auto w-full max-w-2xl">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -51,8 +50,12 @@ export function FileDropzone() {
             : "border-white/20 bg-white/[0.03] hover:border-white/40"
         }`}
       >
-        <div className="pointer-events-none absolute inset-0 lightning-veil opacity-40" />
-        <div className="relative">
+        {/* Decorative glass veil — never capture taps */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 lightning-veil opacity-40"
+        />
+        <div className="relative z-10">
           <p className="font-[family-name:var(--font-display)] text-2xl tracking-tight text-white sm:text-3xl">
             Upload your statement
           </p>
@@ -60,29 +63,32 @@ export function FileDropzone() {
             Use Excel (.xlsx) or CSV (.csv) from your bank or wallet. Debit/credit
             columns or signed amounts are auto-detected.
           </p>
-          <div className="mt-6 flex justify-center sm:mt-8">
-            <Button
-              disabled={busy}
-              className="w-full sm:w-auto"
-              onClick={() => inputRef.current?.click()}
+          <div className="relative z-20 mt-6 flex justify-center sm:mt-8">
+            {/* Native label → file input works reliably on mobile (no programmatic click) */}
+            <label
+              htmlFor={inputId}
+              className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-white/20 bg-white px-4 py-2.5 text-sm font-medium tracking-wide text-black shadow-[0_0_24px_rgba(255,255,255,0.18)] transition duration-200 sm:w-auto ${
+                busy ? "pointer-events-none cursor-not-allowed opacity-40" : ""
+              }`}
             >
               {busy ? "Reading…" : "Choose Excel or CSV"}
-            </Button>
+            </label>
+            <input
+              id={inputId}
+              type="file"
+              accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="sr-only"
+              disabled={busy}
+              onChange={(e) => {
+                void onFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
           </div>
           <p className="mx-auto mt-5 max-w-md text-xs leading-relaxed text-zinc-500">
             Excel or CSV only — not PDF. Your file is read only in this browser.
             It is not uploaded or saved anywhere.
           </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            className="hidden"
-            onChange={(e) => {
-              void onFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
         </div>
       </div>
       {localError || error ? (
