@@ -110,8 +110,8 @@ export function Dashboard() {
             Check who you give the most.
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:mt-4 sm:text-base">
-            Upload a wallet statement. Rank recipients, open anyone for charts and
-            transfers, and see where your money actually goes.
+            Upload an Excel (.xlsx) or CSV wallet statement. Rank recipients and
+            see where your money goes.
           </p>
         </div>
         <FileDropzone />

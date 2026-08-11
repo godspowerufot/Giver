@@ -48,7 +48,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
       const { transactions, meta } = await parseLedgerFile(file);
       if (!transactions.length) {
         throw new Error(
-          "No transactions found. Use a CSV/XLSX with debit/credit columns or signed amounts.",
+          "No transactions found. Use an Excel (.xlsx) or CSV export with debit/credit columns or signed amounts.",
         );
       }
       const insight = computeLedger(transactions);

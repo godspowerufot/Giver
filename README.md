@@ -1,6 +1,8 @@
 # Giver
 
-Check who you give the most. Upload a CSV or Excel wallet statement to rank recipients, see who sends you money, net balances, and spend-down suggestions.
+Check who you give the most. Upload an **Excel (.xlsx)** or **CSV** wallet or bank statement to rank recipients, see who sends you money, net balances, and spend-down suggestions.
+
+**Supported formats:** Excel (`.xlsx`) and CSV (`.csv`). PDF is not supported.
 
 **Privacy:** Your statement is parsed entirely in the browser. Files are not uploaded or saved to any server.
 
@@ -18,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and choose a `.csv` / `.xlsx` file.
+Open [http://localhost:3000](http://localhost:3000) and choose an Excel `.xlsx` or `.csv` file.
 
 ## Architecture
 

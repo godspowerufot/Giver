@@ -250,12 +250,10 @@ export async function parseLedgerFile(file: File): Promise<ParseResult> {
   if (name.endsWith(".csv") || file.type === "text/csv") {
     return parseCsv(file);
   }
-  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+  if (name.endsWith(".xlsx")) {
     return parseWorkbook(file);
   }
-  try {
-    return await parseWorkbook(file);
-  } catch {
-    return parseCsv(file);
-  }
+  throw new Error(
+    "Please upload Excel (.xlsx) or CSV (.csv). PDF and other formats are not supported.",
+  );
 }

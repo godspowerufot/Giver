@@ -19,7 +19,7 @@ const body = Outfit({
 export const metadata: Metadata = {
   title: "Giver — Check who you give the most",
   description:
-    "Upload a wallet statement and see who you send the most money to — ranked recipients, charts, nets, and spend suggestions.",
+    "Upload an Excel (.xlsx) or CSV wallet statement and see who you send the most money to — ranked recipients, charts, nets, and spend suggestions.",
 };
 
 export const viewport: Viewport = {
