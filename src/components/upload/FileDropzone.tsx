@@ -6,7 +6,8 @@ import { SPREADSHEET_TOAST } from "@/lib/messages";
 import { isStatementFile } from "@/lib/parse/parseFile";
 import { useLedger } from "@/hooks/useLedger";
 
-const ACCEPT = ".csv,text/csv";
+const ACCEPT =
+  ".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 
 export function FileDropzone({
   mode = "replace",
@@ -43,7 +44,7 @@ export function FileDropzone({
             busy ? "pointer-events-none opacity-40" : ""
           }`}
         >
-          {busy ? "Parsing…" : "Add CSV"}
+          {busy ? "Working…" : "Add statements"}
         </label>
         <input
           id={inputId}
@@ -89,8 +90,8 @@ export function FileDropzone({
             Upload your statement
           </p>
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-400">
-            CSV only for now. Known bank layouts parse in-browser; unknown column
-            layouts are rewritten with Gemini Flash into clean ranked rows.
+            OPay / bank Excel only. Drop .xlsx — we structure am, then show who
+            collect pass and who dash you pass.
           </p>
           <div className="relative z-20 mt-6 flex justify-center sm:mt-8">
             <label
@@ -99,7 +100,7 @@ export function FileDropzone({
                 busy ? "pointer-events-none cursor-not-allowed opacity-40" : ""
               }`}
             >
-              {busy ? "Parsing…" : "Choose CSV"}
+              {busy ? "E dey work…" : "Choose Excel (.xlsx)"}
             </label>
             <input
               id={inputId}
@@ -115,8 +116,7 @@ export function FileDropzone({
             />
           </div>
           <p className="mx-auto mt-5 max-w-md text-xs leading-relaxed text-zinc-500">
-            Export CSV from your bank or wallet. Multiple files can be merged and
-            deduped in this session.
+            Progress: upload → check format → structure → rankings. Excel only.
           </p>
         </div>
       </div>

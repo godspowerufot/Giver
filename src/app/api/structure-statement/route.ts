@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
-import { structureStatementWithGemini } from "@/lib/parse/structureWithGemini";
+import { structureStatementWithOpenAI } from "@/lib/parse/structureWithOpenAI";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const MAX_BYTES = 20 * 1024 * 1024;
+
+function isAllowed(file: File) {
+  const name = file.name.toLowerCase();
+  return (
+    name.endsWith(".xlsx") ||
+    name.endsWith(".xls") ||
+    file.type ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    file.type === "application/vnd.ms-excel"
+  );
+}
 
 export async function POST(request: Request) {
   try {
@@ -25,15 +36,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const name = file.name.toLowerCase();
-    if (!name.endsWith(".csv") && file.type !== "text/csv") {
+    if (!isAllowed(file)) {
       return NextResponse.json(
-        { error: "Please upload a CSV bank or wallet statement." },
+        {
+          error: "Please upload Excel (.xlsx) only.",
+        },
         { status: 400 },
       );
     }
 
-    const result = await structureStatementWithGemini(file);
+    const result = await structureStatementWithOpenAI(file);
 
     return NextResponse.json({
       transactions: result.transactions.map((tx) => ({

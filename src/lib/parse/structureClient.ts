@@ -9,7 +9,7 @@ type ApiResponse = {
   error?: string;
 };
 
-/** Send a statement to the server for Gemini → Transaction[] structuring. */
+/** Send a statement to the server for OpenAI → Transaction[] structuring. */
 export async function structureStatementViaApi(file: File): Promise<ParseResult> {
   const form = new FormData();
   form.append("file", file, file.name);
@@ -21,7 +21,7 @@ export async function structureStatementViaApi(file: File): Promise<ParseResult>
 
   const data = (await res.json().catch(() => ({}))) as ApiResponse;
   if (!res.ok) {
-    throw new Error(data.error || "Failed to structure statement with Gemini.");
+    throw new Error(data.error || "Failed to structure statement with OpenAI.");
   }
 
   if (!data.transactions || !data.meta) {

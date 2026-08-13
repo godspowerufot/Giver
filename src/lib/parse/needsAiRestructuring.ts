@@ -3,7 +3,7 @@ import type { ParseResult } from "@/lib/parse/parseFile";
 
 /**
  * Strict Giver layout: description + money columns we can trust.
- * A lone "Amount" / "Value" column is NOT enough — that falsely skips Gemini.
+ * A lone "Amount" / "Value" column is NOT enough — that falsely skips OpenAI.
  */
 export function matchesGiverColumnMap(map: ColumnMap | undefined): boolean {
   if (!map?.description) return false;
@@ -17,7 +17,7 @@ export function matchesGiverColumnMap(map: ColumnMap | undefined): boolean {
   }
 
   if (map.mode === "signed_amount") {
-    // Require date so random "amount" CSVs don't count as matched.
+    // Require date so random "amount" sheets don't count as matched.
     return Boolean(map.amount && map.date);
   }
 
@@ -25,7 +25,7 @@ export function matchesGiverColumnMap(map: ColumnMap | undefined): boolean {
 }
 
 /**
- * True when local parse should be discarded and Gemini rewrite the file
+ * True when local parse should be discarded and OpenAI rewrite the file
  * into Giver's Transaction[] shape.
  */
 export function needsAiRestructuring(result: ParseResult): boolean {

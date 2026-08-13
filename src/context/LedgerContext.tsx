@@ -15,34 +15,103 @@ import {
   appendParseResults,
   mergeParseResults,
 } from "@/lib/parse/mergeStatements";
-import { isStatementFile, parseLedgerFile } from "@/lib/parse/parseFile";
+import { canUseLocalStructure } from "@/lib/parse/isOpayStructure";
 import { needsAiRestructuring } from "@/lib/parse/needsAiRestructuring";
+import { isStatementFile, parseLedgerFile } from "@/lib/parse/parseFile";
 import { structureStatementViaApi } from "@/lib/parse/structureClient";
 import type { ParseResult } from "@/lib/parse/parseFile";
-import type { LedgerState } from "@/lib/types";
+import type { LedgerState, ParseProgress } from "@/lib/types";
 import { useToast } from "@/context/ToastContext";
 
+type ProgressFn = (patch: Partial<ParseProgress> & Pick<ParseProgress, "label" | "stage">) => void;
+
+function startProgressTicker(
+  setProgress: ProgressFn,
+  from: number,
+  to: number,
+  label: string,
+  stage: ParseProgress["stage"],
+  detail?: string,
+) {
+  let current = from;
+  setProgress({ percent: current, label, stage, detail });
+  const id = window.setInterval(() => {
+    // Ease toward `to` but never reach it until the real work finishes.
+    const gap = to - current;
+    if (gap <= 0.5) return;
+    current += Math.max(0.35, gap * 0.045);
+    setProgress({
+      percent: Math.min(to, current),
+      label,
+      stage,
+      detail,
+    });
+  }, 320);
+  return () => window.clearInterval(id);
+}
+
 /**
- * Known CSV layouts → local parse into Transaction[].
- * Unknown / mismatched CSV layouts → Gemini (chunked for large files).
+ * OPay / known wallet layout → local parse (no AI).
+ * Anything else → OpenAI structures it before display.
  */
-async function parseStatementFile(file: File): Promise<ParseResult> {
+async function parseStatementFile(
+  file: File,
+  onProgress: ProgressFn,
+): Promise<ParseResult> {
+  onProgress({
+    percent: 6,
+    label: "Uploading statement…",
+    stage: "reading",
+    detail: file.name,
+  });
+
   let local: ParseResult | null = null;
   try {
+    onProgress({
+      percent: 18,
+      label: "Reading spreadsheet…",
+      stage: "reading",
+      detail: file.name,
+    });
     local = await parseLedgerFile(file);
   } catch {
     local = null;
   }
 
-  if (local && !needsAiRestructuring(local)) {
+  onProgress({
+    percent: 32,
+    label: "Checking statement format…",
+    stage: "checking",
+    detail: file.name,
+  });
+
+  const useLocal =
+    local &&
+    canUseLocalStructure(local) &&
+    !needsAiRestructuring(local);
+
+  if (useLocal && local) {
     console.info(
-      `[giver] local CSV OK for ${file.name}: ${local.transactions.length} rows (${local.meta.detectedMode})`,
+      `[giver] OPay/local structure OK for ${file.name}: ${local.transactions.length} rows`,
     );
+    onProgress({
+      percent: 78,
+      label: "Wallet format recognized…",
+      stage: "ranking",
+      detail: "Fast path",
+    });
+    await new Promise((r) => setTimeout(r, 280));
+    onProgress({
+      percent: 94,
+      label: "Preparing rankings…",
+      stage: "ranking",
+      detail: file.name,
+    });
     return local;
   }
 
   console.info(
-    `[giver] unstructured CSV → Gemini for ${file.name}`,
+    `[giver] non-OPay / unknown layout → OpenAI for ${file.name}`,
     local
       ? {
           mode: local.meta.detectedMode,
@@ -52,24 +121,49 @@ async function parseStatementFile(file: File): Promise<ParseResult> {
       : { local: "failed" },
   );
 
+  const stopTicker = startProgressTicker(
+    onProgress,
+    38,
+    88,
+    "Structuring…",
+    "structuring",
+    file.name,
+  );
+
   try {
     const ai = await structureStatementViaApi(file);
-    if (ai.transactions.length) return ai;
+    stopTicker();
+    if (ai.transactions.length) {
+      onProgress({
+        percent: 94,
+        label: "Normalizing complete…",
+        stage: "ranking",
+        detail: `${ai.transactions.length} transactions`,
+      });
+      return ai;
+    }
   } catch (aiErr) {
+    stopTicker();
     if (local?.transactions.length) {
       console.warn(
-        `[giver] Gemini failed; keeping local rows for ${file.name}`,
+        `[giver] OpenAI failed; keeping local rows for ${file.name}`,
         aiErr instanceof Error ? aiErr.message : aiErr,
       );
+      onProgress({
+        percent: 90,
+        label: "Using local parse…",
+        stage: "ranking",
+        detail: file.name,
+      });
       return local;
     }
     throw aiErr instanceof Error
       ? aiErr
-      : new Error("Failed to structure CSV.");
+      : new Error("Failed to structure statement.");
   }
 
   if (local?.transactions.length) return local;
-  throw new Error("No transactions found after local + Gemini parse.");
+  throw new Error("No transactions found after local + OpenAI parse.");
 }
 
 export type DashboardView = "overview" | "people" | "transactions" | "insights";
@@ -93,6 +187,7 @@ const initialState: LedgerState = {
   meta: null,
   transactions: [],
   insight: null,
+  parseProgress: null,
 };
 
 const LedgerContext = createContext<LedgerContextValue | null>(null);
@@ -121,15 +216,60 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
             }
           : null;
 
-      setState((s) => ({ ...s, status: "parsing", error: null }));
+      setState((s) => ({
+        ...s,
+        status: "parsing",
+        error: null,
+        parseProgress: {
+          percent: 2,
+          label: "Starting…",
+          stage: "reading",
+          detail:
+            list.length > 1 ? `${list.length} files` : list[0]?.name,
+        },
+      }));
+
+      const report: ProgressFn = (patch) => {
+        setState((s) => ({
+          ...s,
+          parseProgress: {
+            percent: patch.percent ?? s.parseProgress?.percent ?? 0,
+            label: patch.label,
+            stage: patch.stage,
+            detail: patch.detail ?? s.parseProgress?.detail,
+          },
+        }));
+      };
+
       try {
         const invalid = list.find((file) => !isStatementFile(file));
         if (invalid) throw new Error(SPREADSHEET_TOAST);
 
         const parsed = [];
-        for (const file of list) {
-          parsed.push(await parseStatementFile(file));
+        for (let i = 0; i < list.length; i++) {
+          const file = list[i];
+          const fileDetail =
+            list.length > 1
+              ? `${file.name} (${i + 1}/${list.length})`
+              : file.name;
+          report({
+            percent: Math.round((i / list.length) * 100 * 0.1),
+            label: "Uploading statement…",
+            stage: "reading",
+            detail: fileDetail,
+          });
+          const result = await parseStatementFile(file, (p) =>
+            report({ ...p, detail: p.detail ?? fileDetail }),
+          );
+          parsed.push(result);
         }
+
+        report({
+          percent: 96,
+          label: "Computing rankings…",
+          stage: "ranking",
+          detail: `${parsed.reduce((n, p) => n + p.transactions.length, 0)} rows`,
+        });
 
         const merged =
           mode === "append" && wasReady
@@ -142,17 +282,25 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
 
         if (!merged.transactions.length) {
           throw new Error(
-            "No transactions found. Try another CSV bank/wallet export.",
+            "No transactions found. Try another Excel (.xlsx) export.",
           );
         }
 
         const insight = computeLedger(merged.transactions);
+        report({
+          percent: 100,
+          label: "Done",
+          stage: "done",
+        });
+        await new Promise((r) => setTimeout(r, 220));
+
         setState({
           status: "ready",
           error: null,
           meta: merged.meta,
           transactions: merged.transactions,
           insight,
+          parseProgress: null,
         });
         setViewState("overview");
         setSelectedPerson(null);
@@ -171,6 +319,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
             meta: previous.meta,
             transactions: previous.transactions,
             insight: previous.insight,
+            parseProgress: null,
           });
           return;
         }
@@ -178,6 +327,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
           ...initialState,
           status: "error",
           error: message,
+          parseProgress: null,
         });
       }
     },

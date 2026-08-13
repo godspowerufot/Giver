@@ -239,3 +239,130 @@ body {
       translateY(-120px) scale(1);
   }
 }
+
+/* Landing */
+.landing-fade {
+  animation: landing-fade 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-fade-up {
+  animation: landing-fade-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-cta-pulse {
+  animation: landing-cta-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes landing-cta-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* Meme ticker header */
+.meme-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+}
+
+.meme-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 0.75rem;
+  animation: meme-marquee 38s linear infinite;
+}
+
+.meme-marquee-reverse {
+  animation-name: meme-marquee-reverse;
+  animation-duration: 44s;
+}
+
+.meme-marquee-item {
+  height: 6.5rem;
+  width: 9.25rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #111;
+}
+
+@media (min-width: 640px) {
+  .meme-marquee-item {
+    height: 9rem;
+    width: 12.75rem;
+  }
+  .meme-marquee-track {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .meme-marquee-item {
+    height: 11rem;
+    width: 15.5rem;
+  }
+}
+
+@keyframes meme-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-33.333%);
+  }
+}
+
+@keyframes meme-marquee-reverse {
+  from {
+    transform: translateX(-33.333%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meme-marquee-track,
+  .meme-marquee-reverse {
+    animation: none;
+  }
+}

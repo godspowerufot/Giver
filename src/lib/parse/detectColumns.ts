@@ -17,12 +17,12 @@ const DATE_KEYS = [
   "trans. date",
   "trans date",
   "transaction date",
-  "value date",
   "posted date",
   "posting date",
   "datetime",
   "date time",
   "date",
+  "value date",
   "time",
 ];
 const DESC_KEYS = [

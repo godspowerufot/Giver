@@ -19,9 +19,9 @@ const body = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Giver — Check who you give the most",
+  title: "Giver — Who you dey dash pass?",
   description:
-    "Upload CSV wallet statements and see who you send the most money to — ranked recipients, charts, nets, and spend suggestions.",
+    "Upload your OPay Excel statement and see who you give the most — and who gives you the most. Excel (.xlsx) only. Funny Pidgin rankings and share cards.",
 };
 
 export const viewport: Viewport = {

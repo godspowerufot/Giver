@@ -1,27 +1,25 @@
 # Giver
 
-Check who you give the most. Upload **CSV** wallet/bank statements (one or many) to rank recipients, nets, and spend suggestions.
+**Who you dey dash pass? Who dey dash you pass?**
 
-**Supported format:** CSV (`.csv`) only for now.
+Upload an **Excel (.xlsx)** OPay/bank statement to rank who you give the most — and who gives you the most.
 
-## How unstructured CSVs are handled
+## How files are handled
 
-1. **Local first** — detect columns (`date`, `amount`, `debit`/`credit`, `type`, `recipient`, `narration`, …) and map into Giver’s `Transaction[]`.
-2. **If the layout doesn’t match** (unknown headers, mostly undated/unknown direction, low row yield) → **Gemini Flash** rewrites the CSV into that same shape.
-3. **Large CSVs** are sent to Gemini in **chunks** (~120 rows) and merged/deduped.
-4. Multiple CSVs can be uploaded and merged in one session.
+1. **OPay / known wallet Excel** — local parse in the browser.
+2. **Other bank Excel layouts** — structured into Giver’s format (progress overlay while you wait).
+3. Share Pidgin celebration / thank-you cards via link.
 
-## Privacy
-
-Known layouts stay in the browser. Unfamiliar CSVs are sent briefly to Gemini to extract rows, then discarded. Your ranked ledger stays in the session.
+**Excel only.** PDF / CSV not accepted.
 
 ## Setup
 
 ```bash
 cp .env.example .env.local
-# set GEMINI_API_KEY=...
+# OPENAI_API_KEY=...
+# OPENAI_MODEL=gpt-4o
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and choose a `.csv` file.
+Open [http://localhost:3000](http://localhost:3000).

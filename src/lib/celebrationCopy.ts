@@ -3,19 +3,36 @@ export interface CelebrationLines {
   reply: string;
 }
 
-const REPLIES = [
-  "My wallet filed a missing-person report and listed your name as the last known location.",
-  "You're not on my payroll… but somehow you're in the budget every week.",
-  "If loyalty points existed for receiving my transfers, you'd be platinum by now.",
-  "I checked who I give the most. Spoiler: it was you. Again.",
-  "My statement read like a love letter — and somehow every chapter was you.",
-  "Congrats! You won 'Most Likely to Appear on My Debit Column.' Trophy pending.",
-  "I told my money to behave. It said your name and left.",
-  "You're my top recipient. At this point, OPay should just rename my account after you.",
-  "Not saying you're expensive… but my charts made a shrine in your honor.",
-  "If giving were a sport, you'd be my season MVP. Unpaid. Obviously.",
-  "I open Giver for insights. I stay for the reminder that you're winning.",
-  "You're #1. My savings account asked for a restraining order.",
+/** Spender → top recipient: savage Pidgin celebration. */
+const RECIPIENT_ROASTS = [
+  "My guy, you don collect my money pass NEPA collect light bill. Congrats o.",
+  "Abeg, your account na my second BVN. Anytime money leave, e dey find you.",
+  "Na you be the real landlord of my wallet. Rent dey clear sharp sharp.",
+  "I check who I give most… e be you again. At this point just open POS for me.",
+  "Omo, if giving money na exam, you don graduate with first class from my OPay.",
+  "My debit column dey hail you like VIP. Even my balance dey fear your name.",
+  "You no be thief, but my money dey salute you every week. Respect.",
+  "Wetin I do you? Why my transfer history look like your CV?",
+  "If love na money, you don marry my wallet long time. Soft life unlocked.",
+  "Top recipient award goes to you. Trophy na this card — cash you don already collect.",
+  "Bro/sis, calm down small. Leave last 2k for me, no be only you dey hungry.",
+  "My statement read your name more than my own. Na you be the main character.",
+];
+
+/** Receiver → top sender: funny Pidgin thank-you. */
+const SENDER_THANKS = [
+  "Oga thank you o! Your credit dey hit my account like blessing wey no get expiry date.",
+  "My guy, anytime your alert land, even my phone dey smile. God bless your hustle.",
+  "Na you be my personal Central Bank. Interest rate? Pure vibes.",
+  "Thank you! If money fit talk, e go say your name with bass voice.",
+  "You dey send pass small small. My balance dey greet you before I even wake.",
+  "Big man/woman thank you. Your transfer na the reason my chart no dey look like sadness.",
+  "I no go lie — your money dey keep me standing. May your pocket never dry.",
+  "Alert from you na my favourite ringtone. Keep that energy, chairman.",
+  "Thank you o. You no just send money — you send hope, food, and small swagger.",
+  "Top sender award: YOU. My account say make I tell you say e appreciate the sponsorship.",
+  "God when? God now — and God look like your transfer. Thank you plenty.",
+  "My credit column dey clap for you. Me sef dey clap. Make we clap together.",
 ];
 
 function firstName(fullName: string): string {
@@ -24,39 +41,24 @@ function firstName(fullName: string): string {
 
 export function buildCelebration(name: string, sharePct: number): CelebrationLines {
   const short = firstName(name);
-  const reply = REPLIES[Math.floor(Math.random() * REPLIES.length)]!;
+  const reply = RECIPIENT_ROASTS[Math.floor(Math.random() * RECIPIENT_ROASTS.length)]!;
   return {
-    headline: `${short}, you're my top recipient`,
+    headline: `${short}, you don win o`,
     reply:
       sharePct >= 1
-        ? `${reply} (That's ${sharePct.toFixed(0)}% of my person transfers — no notes.)`
+        ? `${reply} (Na ${sharePct.toFixed(0)}% of my person transfers — no deny!)`
         : reply,
   };
 }
 
-const THANKS = [
-  "Thank you. My account balance smiles every time your name shows up as a credit.",
-  "You're the reason my 'Transfer in' chart looks this good. Truly.",
-  "Official thank-you note: you send the most, and my wallet noticed.",
-  "If gratitude had a bank transfer, I'd send it back — with interest.",
-  "You're my top sender. My statement said thank you before I could.",
-  "Big thanks. You keep showing up in the credit column like a legend.",
-  "Thank you for funding my plot twists. My charts agree.",
-  "You're #1 on people who send me money. Consider this my receipt of appreciation.",
-  "Grateful doesn't cover it — but this card will have to do.",
-  "Thank you. Whenever money comes in, I check the name… and smile when it's you.",
-  "You send the most. I notice. I'm saying thank you out loud now.",
-  "My top sender award goes to you. Trophy is this thank-you card. Enjoy.",
-];
-
 export function buildThankYou(name: string, sharePct: number): CelebrationLines {
   const short = firstName(name);
-  const reply = THANKS[Math.floor(Math.random() * THANKS.length)]!;
+  const reply = SENDER_THANKS[Math.floor(Math.random() * SENDER_THANKS.length)]!;
   return {
-    headline: `${short}, thank you`,
+    headline: `${short}, thank you o`,
     reply:
       sharePct >= 1
-        ? `${reply} (You're ${sharePct.toFixed(0)}% of what people sent me — wild.)`
+        ? `${reply} (You be ${sharePct.toFixed(0)}% of wetin people send me — mad!)`
         : reply,
   };
 }

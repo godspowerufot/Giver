@@ -13,7 +13,7 @@ import { NetBalances } from "@/components/dashboard/NetBalances";
 import { PeopleDirectory } from "@/components/dashboard/PeopleDirectory";
 import { Recommendations } from "@/components/dashboard/Recommendations";
 import { TransactionTable } from "@/components/dashboard/TransactionTable";
-import { FileDropzone } from "@/components/upload/FileDropzone";
+import { LandingPage } from "@/components/landing/LandingPage";
 import { useLedger } from "@/hooks/useLedger";
 
 function OverviewView() {
@@ -103,20 +103,7 @@ export function Dashboard() {
   const { status, insight, view } = useLedger();
 
   if (status !== "ready" || !insight) {
-    return (
-      <section className="flex min-h-[65dvh] w-full min-w-0 max-w-full flex-col justify-center overflow-x-clip">
-        <div className="mb-8 max-w-xl sm:mb-10">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl">
-            Check who you give the most.
-          </h1>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:mt-4 sm:text-base">
-            Upload a CSV wallet or bank statement — one file or several. Rank
-            recipients and see where your money goes.
-          </p>
-        </div>
-        <FileDropzone />
-      </section>
-    );
+    return <LandingPage />;
   }
 
   if (view === "people") return <PeopleDirectory />;

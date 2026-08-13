@@ -117,7 +117,7 @@ export function normalizeAiStatement(
       balanceAfter,
       kind,
       raw: {
-        source: "gemini",
+        source: "openai",
         description,
         amount: String(amount),
         direction,
@@ -141,8 +141,12 @@ export function parseAiStatementText(text: string, fileName: string): ParseResul
   return normalizeAiStatement(extractJsonObject(text), fileName);
 }
 
-export const STRUCTURE_PROMPT = `You are a bank/wallet statement parser for the Giver app.
-Read the attached statement and return ONLY valid JSON (no markdown) matching:
+export const STRUCTURE_PROMPT = `You are a bank/wallet statement normalizer for the Giver app.
+Any bank or wallet export may arrive — different columns, languages, multi-sheet Excel,
+merged cells, rich text, debit/credit pairs, signed amounts, or messy narrations.
+Your job: turn EVERY money movement into ONE clean JSON shape for ranking/presentation.
+
+Return ONLY valid JSON (no markdown):
 
 {
   "accountName": string|null,
@@ -154,7 +158,7 @@ Read the attached statement and return ONLY valid JSON (no markdown) matching:
       "description": string,
       "amount": number (absolute positive money value),
       "direction": "sent" | "received" | "unknown",
-      "counterparty": string|null (person/business for person transfers),
+      "counterparty": string|null (person/business name for rankings),
       "bank": string|null,
       "account": string|null,
       "channel": string|null,
@@ -165,17 +169,19 @@ Read the attached statement and return ONLY valid JSON (no markdown) matching:
   ]
 }
 
-Rules for clean presentation:
-- Include every money movement you can confidently extract.
-- direction "sent" = money leaving the account; "received" = money entering.
-- Prefer real counterparty names for person-to-person transfers; null for fees/bills/airtime if no person.
-- amount must be a positive number without currency symbols (use absolute value if signed).
-- Ignore headers, footers, ads, page numbers, and marketing.
-- Keep descriptions concise and readable for charts and rankings.
-- Different banks use different headers — map them. Examples:
-  recipient/payee/beneficiary/merchant → counterparty
-  type/flow/txn type (sent|received|debit|credit) → direction
-  narration/details/memo → description
-  transaction_id / ref / reference → reference
-  debit+credit columns OR a signed amount column → amount + direction
+Rules:
+- Handle ANY layout. Map whatever headers exist into the fields above.
+- Include every transaction across ALL sheets/pages; do not stop at the first table.
+- Skip opening balance, totals, footers, ads, and marketing.
+- direction "sent" = money out (debit); "received" = money in (credit).
+- amount is always a positive number (no currency symbols).
+- counterparty: extract the clearest person/merchant name from narration
+  (e.g. "T EDWIN MICHEAL", "CIP/CR/USSD/ABRAHAM UDO BILL/OPAY" → "ABRAHAM UDO BILL",
+  "Fincra Technologies Limited"). Use null for pure fees/airtime/SMS with no person.
+- description: keep readable but concise (one line when possible).
+- kind: fee for charges/VAT/stamp duty; bill for airtime/data/utilities/subscriptions;
+  transfer for person/business payments; other otherwise.
+- Column aliases (non-exhaustive): recipient/payee/beneficiary/merchant → counterparty;
+  type/flow/debit|credit → direction; narration/details/memo → description;
+  transaction_id/ref → reference; debit+credit OR signed amount → amount + direction.
 - If the file is not a statement, return empty transactions.`;

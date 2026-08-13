@@ -1,15 +1,24 @@
 "use client";
 
 import { useCallback, useId, type ReactNode } from "react";
-import { DashboardPreview } from "@/components/landing/DashboardPreview";
+import { ParseProgressOverlay } from "@/components/upload/ParseProgressOverlay";
 import { useToast } from "@/context/ToastContext";
 import { useLedger } from "@/hooks/useLedger";
 import { SPREADSHEET_TOAST } from "@/lib/messages";
 import { isStatementFile } from "@/lib/parse/parseFile";
 
-const ACCEPT = ".csv,text/csv";
+const ACCEPT =
+  ".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 
-function UploadLabel({
+const MEMES = [
+  { src: "/money-root-evil.png", alt: "Money makes me happy" },
+  { src: "/counting-money.gif", alt: "Counting naira" },
+  { src: "/torn-money.jpg", alt: "This your money is torn" },
+  { src: "/thinking.jpg", alt: "Thinking about the debit" },
+  { src: "/tenor-1.gif", alt: "Side-eye reaction" },
+];
+
+function UploadButton({
   htmlFor,
   busy,
   className = "",
@@ -23,7 +32,7 @@ function UploadLabel({
   return (
     <label
       htmlFor={htmlFor}
-      className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-white/20 bg-white px-4 py-2.5 text-sm font-medium tracking-wide text-black shadow-[0_0_24px_rgba(255,255,255,0.18)] transition duration-200 ${
+      className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-medium tracking-wide text-black transition hover:bg-zinc-100 sm:px-7 sm:py-3.5 sm:text-base ${
         busy ? "pointer-events-none cursor-not-allowed opacity-40" : ""
       } ${className}`}
     >
@@ -32,8 +41,26 @@ function UploadLabel({
   );
 }
 
+function MemeMarquee({ reverse = false }: { reverse?: boolean }) {
+  const track = [...MEMES, ...MEMES, ...MEMES];
+  return (
+    <div className="meme-marquee" aria-hidden>
+      <div
+        className={`meme-marquee-track ${reverse ? "meme-marquee-reverse" : ""}`}
+      >
+        {track.map((meme, i) => (
+          <div key={`${meme.src}-${i}`} className="meme-marquee-item">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={meme.src} alt="" className="h-full w-full object-cover" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LandingPage() {
-  const { loadFiles, status, error } = useLedger();
+  const { loadFiles, status, error, parseProgress } = useLedger();
   const { toast } = useToast();
   const inputId = useId();
   const busy = status === "parsing";
@@ -52,126 +79,56 @@ export function LandingPage() {
   );
 
   return (
-    <div className="relative min-h-dvh overflow-x-clip bg-[#070708] text-zinc-100">
-      <div className="pointer-events-none absolute inset-0 z-0 lightning-field" aria-hidden />
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[55vh] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.14),transparent_58%)]"
-        aria-hidden
-      />
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-[#070708] text-zinc-100">
+      {busy && parseProgress ? (
+        <ParseProgressOverlay progress={parseProgress} />
+      ) : null}
 
-      <header className="relative z-20 border-b border-white/10 pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto flex max-w-6xl items-end justify-between gap-4 px-4 py-5 sm:px-8 sm:py-6">
-          <div className="landing-fade" style={{ animationDelay: "40ms" }}>
-            <p className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.05em] text-white sm:text-5xl md:text-6xl">
-              Giver
-            </p>
-            <p className="mt-1.5 text-[11px] uppercase tracking-[0.22em] text-zinc-400 sm:text-xs">
-              Check who you give the most
-            </p>
-          </div>
-          <div
-            className="landing-fade relative z-20 hidden sm:block"
-            style={{ animationDelay: "120ms" }}
-          >
-            <UploadLabel htmlFor={inputId} busy={busy} className="landing-cta-pulse">
-              {busy ? "Parsing…" : "Upload CSV"}
-            </UploadLabel>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05),transparent_55%)]" />
+
+      <main className="relative z-10 flex flex-1 flex-col justify-center pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)]">
+        <div className="pt-6 sm:pt-8 md:pt-10">
+          <MemeMarquee />
+          <div className="mt-2.5 sm:mt-3">
+            <MemeMarquee reverse />
           </div>
         </div>
-      </header>
 
-      <main className="relative z-20">
-        <section className="mx-auto grid max-w-6xl gap-8 px-4 pb-6 pt-8 sm:gap-10 sm:px-8 sm:pb-10 sm:pt-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.2fr)] lg:items-end lg:gap-12 lg:pt-12">
-          <div
-            className="landing-fade relative z-20 max-w-xl"
-            style={{ animationDelay: "160ms" }}
-          >
-            <h1 className="font-[family-name:var(--font-display)] text-3xl leading-[1.05] tracking-[-0.04em] text-white sm:text-4xl lg:text-[2.75rem]">
-              Your statement.
-              <br />
-              Ranked in seconds.
-            </h1>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400 sm:text-base">
-              Upload one or more CSV statements. Known layouts parse on-device;
-              unknown bank formats are structured with Gemini Flash.
-            </p>
-            <div className="relative z-20 mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <UploadLabel
-                htmlFor={inputId}
-                busy={busy}
-                className="w-full landing-cta-pulse sm:w-auto"
-              >
-                {busy ? "Parsing…" : "Choose CSV"}
-              </UploadLabel>
-              <p className="text-center text-xs text-zinc-500 sm:text-left">
-                CSV only · multi-select supported
-              </p>
-            </div>
-            {error ? (
-              <p className="mt-4 text-sm text-red-300">{error}</p>
-            ) : null}
+        <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-10 text-center sm:px-8 sm:pb-14 sm:pt-14 md:pt-16">
+          <p className="landing-fade text-[10px] uppercase tracking-[0.3em] text-zinc-500 sm:text-xs">
+            Excel only · .xlsx
+          </p>
+
+          <h1 className="landing-fade mt-4 font-[family-name:var(--font-display)] text-6xl leading-[0.92] tracking-[-0.07em] text-white sm:text-8xl md:text-[9rem] lg:text-[11rem]">
+            Giver
+          </h1>
+
+          <p className="landing-fade mx-auto mt-5 max-w-2xl font-[family-name:var(--font-display)] text-xl leading-[1.15] tracking-tight text-zinc-300 sm:mt-7 sm:text-3xl md:text-4xl lg:text-5xl">
+            Who you dey dash pass?
+            <br />
+            Who dey dash you pass?
+          </p>
+
+          <p className="landing-fade mx-auto mt-5 max-w-md text-sm leading-relaxed text-zinc-500 sm:mt-6 sm:text-base md:text-lg">
+            Upload your OPay Excel. Make we expose who dey chop your money —
+            and who dey feed you.
+          </p>
+
+          <div className="landing-fade mt-8 flex flex-col items-center gap-3 sm:mt-10">
+            <UploadButton
+              htmlFor={inputId}
+              busy={busy}
+              className="landing-cta-pulse w-full max-w-xs sm:w-auto"
+            >
+              {busy ? "E dey work…" : "Drop your Excel here"}
+            </UploadButton>
+            <p className="text-xs text-zinc-600 sm:text-sm">PDF no dey enter</p>
           </div>
 
-          <div
-            className="landing-fade-up pointer-events-none relative z-0 lg:translate-y-2"
-            style={{ animationDelay: "280ms" }}
-            aria-hidden
-          >
-            <div className="pointer-events-none absolute -inset-6 hidden bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_65%)] lg:block" />
-            <DashboardPreview />
-          </div>
-        </section>
-
-        <section className="relative border-t border-white/10">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent" />
-          <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-8 sm:py-16 md:flex-row md:items-start md:justify-between md:gap-16">
-            {[
-              {
-                step: "01",
-                title: "Upload CSV",
-                body: "Export CSV from your bank or wallet — one file or several months.",
-              },
-              {
-                step: "02",
-                title: "Rank",
-                body: "Top recipients, senders, nets, and spend concentration — clearly.",
-              },
-              {
-                step: "03",
-                title: "Share the moment",
-                body: "Download a celebration or thank-you card for the people who matter.",
-              },
-            ].map((item, i) => (
-              <div
-                key={item.step}
-                className="landing-fade max-w-xs"
-                style={{ animationDelay: `${400 + i * 100}ms` }}
-              >
-                <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-                  {item.step}
-                </p>
-                <p className="mt-2 font-[family-name:var(--font-display)] text-xl tracking-tight text-white">
-                  {item.title}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-                  {item.body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <footer className="relative border-t border-white/10 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-            <p className="font-[family-name:var(--font-display)] text-sm text-zinc-400">
-              Giver
-            </p>
-            <p className="max-w-md text-xs leading-relaxed text-zinc-600">
-              Known CSVs stay in your browser. Unfamiliar layouts are structured
-              briefly with Gemini, then discarded.
-            </p>
-          </div>
-        </footer>
+          {error ? (
+            <p className="mt-4 text-sm text-red-300">{error}</p>
+          ) : null}
+        </div>
       </main>
 
       <input

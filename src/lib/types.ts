@@ -79,10 +79,25 @@ export interface StatementMeta {
     | "ai_structured";
 }
 
+export type ParseProgressStage =
+  | "reading"
+  | "checking"
+  | "structuring"
+  | "ranking"
+  | "done";
+
+export interface ParseProgress {
+  percent: number;
+  label: string;
+  stage: ParseProgressStage;
+  detail?: string;
+}
+
 export interface LedgerState {
   status: "idle" | "parsing" | "ready" | "error";
   error: string | null;
   meta: StatementMeta | null;
   transactions: Transaction[];
   insight: LedgerInsight | null;
+  parseProgress: ParseProgress | null;
 }
