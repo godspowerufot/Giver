@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { MemeCardFace } from "@/components/dashboard/MemeCardFace";
 import { Button } from "@/components/ui/Button";
 import { Panel, PanelHeader } from "@/components/ui/Panel";
 import { useToast } from "@/context/ToastContext";
@@ -14,7 +9,8 @@ import { useLedger } from "@/hooks/useLedger";
 import { useShareCardLink } from "@/hooks/useShareCardLink";
 import { fetchCardJoke } from "@/lib/cardJokeClient";
 import type { CelebrationLines } from "@/lib/celebrationCopy";
-import { formatNaira, formatPercent, initials } from "@/lib/format";
+import { pickCardMeme, type CardMeme } from "@/lib/cardMemes";
+import { formatNaira, formatPercent } from "@/lib/format";
 
 function CloseIcon() {
   return (
@@ -56,6 +52,7 @@ export function CelebrationCard() {
   const top = insight?.topRecipients[0];
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<CelebrationLines | null>(null);
+  const [meme, setMeme] = useState<CardMeme>(() => pickCardMeme("celebration"));
   const [burstKey, setBurstKey] = useState(0);
   const [loadingJoke, setLoadingJoke] = useState(false);
 
@@ -65,6 +62,7 @@ export function CelebrationCard() {
     if (!top) return;
     setLoadingJoke(true);
     try {
+      setMeme((prev) => pickCardMeme("celebration", prev.id));
       const next = await fetchCardJoke({
         kind: "celebration",
         name: top.name,
@@ -107,11 +105,12 @@ export function CelebrationCard() {
       p: sharePct,
       a: top.sent,
       c: top.sentCount,
+      m: meme.id,
     });
     if (result.copied) {
       toast("Link copied — send it so they can open the card", "info");
     }
-  }, [top, lines, share, sharePct, toast]);
+  }, [top, lines, share, sharePct, toast, meme.id]);
 
   if (!top) return null;
 
@@ -120,17 +119,17 @@ export function CelebrationCard() {
       <Panel className="overflow-hidden">
         <PanelHeader
           title="Celebration card"
-          subtitle="Generate a Pidgin roast, then share a link to the card"
+          subtitle="Naija skit meme + Pidgin roast — share the link"
         />
         <div className="relative px-5 py-5">
           <div className="pointer-events-none absolute -right-6 -top-8 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
           <div className="relative flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/[0.04]">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-black">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/txconfirmation.svg"
+                src={meme.src}
                 alt=""
-                className="h-10 w-10 object-contain"
+                className="h-full w-full object-cover"
                 draggable={false}
               />
             </div>
@@ -148,7 +147,7 @@ export function CelebrationCard() {
             disabled={loadingJoke}
             onClick={() => void generate()}
           >
-            {loadingJoke ? "Writing joke…" : "Generate celebration card"}
+            {loadingJoke ? "Cooking skit…" : "Generate celebration card"}
           </Button>
         </div>
       </Panel>
@@ -168,8 +167,8 @@ export function CelebrationCard() {
                 type="button"
                 onClick={() => void reshuffle()}
                 disabled={loadingJoke || sharing}
-                aria-label="New random joke"
-                title="New random joke"
+                aria-label="New meme and joke"
+                title="New meme and joke"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-[#0c0c0e] text-zinc-300 transition hover:border-white/30 hover:bg-white/5 hover:text-white disabled:opacity-40"
               >
                 <RefreshIcon />
@@ -185,63 +184,19 @@ export function CelebrationCard() {
               </button>
             </div>
 
-            <div
-              key={burstKey}
-              className="relative overflow-hidden rounded-2xl border border-white/20 bg-[#0c0c0e]"
-            >
-              <div className="cele-sparks pointer-events-none absolute inset-0" aria-hidden>
-                {Array.from({ length: 18 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className="cele-spark"
-                    style={{ "--i": i } as CSSProperties}
-                  />
-                ))}
-              </div>
-
-              <div className="relative px-5 pb-7 pt-6 text-center sm:px-6 sm:pb-8 sm:pt-7">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">
-                  Giver · money don go
-                </p>
-
-                <div className="cele-pop relative mx-auto mt-4 flex h-40 w-full max-w-[220px] items-end justify-center sm:mt-5 sm:h-44">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/txconfirmation.svg"
-                    alt=""
-                    className="h-full w-auto max-w-full object-contain"
-                    draggable={false}
-                  />
-                  <div className="absolute -bottom-1 right-[18%] flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white text-xs font-semibold text-black shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:h-11 sm:w-11 sm:text-sm">
-                    {initials(top.name)}
-                  </div>
-                </div>
-
-                {lines ? (
-                  <>
-                    <h2 className="cele-rise mt-6 font-[family-name:var(--font-display)] text-xl tracking-tight text-white sm:mt-7 sm:text-3xl">
-                      {lines.headline}
-                    </h2>
-                    <p className="cele-rise mt-3 text-sm leading-relaxed text-zinc-300 [animation-delay:120ms] sm:mt-4">
-                      “{lines.reply}”
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-8 animate-pulse text-sm text-zinc-400">
-                    Cooking fresh Pidgin joke…
-                  </p>
-                )}
-
-                <div className="cele-rise mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-zinc-500 [animation-delay:200ms] sm:mt-6 sm:gap-6">
-                  <span>{formatPercent(top.shareOfSent)} of sends</span>
-                  <span>{formatNaira(top.sent)}</span>
-                  <span>{top.sentCount} txns</span>
-                </div>
-                <p className="cele-rise mt-6 text-[10px] uppercase tracking-[0.18em] text-zinc-600 [animation-delay:260ms] sm:mt-8">
-                  Check who you give the most
-                </p>
-              </div>
-            </div>
+            <MemeCardFace
+              meme={meme}
+              burstKey={burstKey}
+              eyebrow="Giver · money don go"
+              headline={lines?.headline ?? null}
+              reply={lines?.reply ?? null}
+              loadingLabel="Cooking fresh Pidgin skit…"
+              shareLabel="of sends"
+              sharePctFraction={top.shareOfSent}
+              amount={top.sent}
+              txnCount={top.sentCount}
+              foot="Check who you give the most"
+            />
 
             <div className="mt-3 sm:mt-4">
               <Button
@@ -256,7 +211,7 @@ export function CelebrationCard() {
                     : "Share card link"}
               </Button>
               <p className="mt-2 text-center text-[11px] text-zinc-500">
-                Opens a page they can view — no download needed
+                They open the meme skit on Giver — no download
               </p>
             </div>
           </div>

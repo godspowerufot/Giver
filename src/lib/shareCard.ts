@@ -1,3 +1,5 @@
+import { isCardMemeId, type CardMemeId } from "@/lib/cardMemes";
+
 export type ShareCardKind = "celebration" | "thanks";
 
 export type ShareCardPayload = {
@@ -8,6 +10,8 @@ export type ShareCardPayload = {
   p: number;
   a: number;
   c: number;
+  /** Meme id from /public Nigerian skit assets */
+  m?: CardMemeId;
 };
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -46,6 +50,7 @@ export function decodeShareCard(token: string): ShareCardPayload | null {
       p: Number(data.p) || 0,
       a: Number(data.a) || 0,
       c: Number(data.c) || 0,
+      m: isCardMemeId(data.m) ? data.m : undefined,
     };
   } catch {
     return null;

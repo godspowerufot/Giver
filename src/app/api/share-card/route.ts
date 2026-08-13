@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCardMemeId } from "@/lib/cardMemes";
 import {
   encodeShareCard,
   shareCardPath,
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
       p: Math.round((Number(body.p) || 0) * 10) / 10,
       a: Math.round(Number(body.a) || 0),
       c: Math.round(Number(body.c) || 0),
+      m: isCardMemeId(body.m) ? body.m : undefined,
     };
 
     const origin = new URL(request.url).origin;

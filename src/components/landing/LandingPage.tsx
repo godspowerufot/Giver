@@ -112,7 +112,7 @@ export function LandingPage() {
 
           <p className="landing-fade mx-auto mt-5 max-w-md text-sm leading-relaxed text-zinc-500 sm:mt-6 sm:text-base md:text-lg">
             Upload your bank spreadsheet. Make we expose who dey chop your money
-            — and who dey feed you. Got PDF?{" "}
+            — and who dey feed you. you wan use PDF?{" "}
             <a
               href="https://www.ilovepdf.com/pdf_to_excel"
               target="_blank"
