@@ -282,7 +282,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
 
         if (!merged.transactions.length) {
           throw new Error(
-            "No transactions found. Try another Excel (.xlsx) export.",
+            "No transactions found. Try another Excel (.xlsx) or CSV export.",
           );
         }
 

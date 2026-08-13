@@ -7,7 +7,7 @@ import { isStatementFile } from "@/lib/parse/parseFile";
 import { useLedger } from "@/hooks/useLedger";
 
 const ACCEPT =
-  ".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
+  ".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 
 export function FileDropzone({
   mode = "replace",
@@ -90,8 +90,8 @@ export function FileDropzone({
             Upload your statement
           </p>
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-400">
-            OPay / bank Excel only. Drop .xlsx — we structure am, then show who
-            collect pass and who dash you pass.
+            OPay / bank spreadsheet. Drop Excel or CSV — we structure am, then
+            show who collect pass and who dash you pass.
           </p>
           <div className="relative z-20 mt-6 flex justify-center sm:mt-8">
             <label
@@ -100,7 +100,7 @@ export function FileDropzone({
                 busy ? "pointer-events-none cursor-not-allowed opacity-40" : ""
               }`}
             >
-              {busy ? "E dey work…" : "Choose Excel (.xlsx)"}
+              {busy ? "E dey work…" : "Choose Excel or CSV"}
             </label>
             <input
               id={inputId}
@@ -116,7 +116,7 @@ export function FileDropzone({
             />
           </div>
           <p className="mx-auto mt-5 max-w-md text-xs leading-relaxed text-zinc-500">
-            Progress: upload → check format → structure → rankings. Excel only.
+            Progress: upload → check format → structure → rankings. Excel or CSV.
           </p>
         </div>
       </div>

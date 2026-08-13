@@ -244,7 +244,7 @@ export async function structureStatementWithOpenAI(
   }
 
   if (!name.endsWith(".xlsx") && !name.endsWith(".xls")) {
-    throw new Error("Unsupported file type. Upload Excel (.xlsx) only.");
+    throw new Error("Unsupported file type. Upload Excel (.xlsx) or CSV.");
   }
 
   // Prefer sheet→text for all worksheets (reliable, chunkable). File upload is fallback.

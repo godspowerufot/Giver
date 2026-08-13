@@ -286,8 +286,25 @@ body {
 }
 
 /* Meme ticker header */
+.meme-marquee-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .meme-marquee-stack {
+    gap: 0.75rem;
+    padding-top: 1.5rem;
+  }
+}
+
 .meme-marquee {
   overflow: hidden;
+  margin: 0;
+  padding: 0;
   mask-image: linear-gradient(
     90deg,
     transparent,
@@ -307,7 +324,7 @@ body {
 .meme-marquee-track {
   display: flex;
   width: max-content;
-  gap: 0.75rem;
+  gap: 0.5rem;
   animation: meme-marquee 38s linear infinite;
 }
 
@@ -317,8 +334,8 @@ body {
 }
 
 .meme-marquee-item {
-  height: 6.5rem;
-  width: 9.25rem;
+  height: 5.25rem;
+  width: 7.5rem;
   flex-shrink: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);

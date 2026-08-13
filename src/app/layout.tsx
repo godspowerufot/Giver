@@ -21,7 +21,7 @@ const body = Outfit({
 export const metadata: Metadata = {
   title: "Giver — Who you dey dash pass?",
   description:
-    "Upload your OPay Excel statement and see who you give the most — and who gives you the most. Excel (.xlsx) only. Funny Pidgin rankings and share cards.",
+    "Upload your bank Excel or CSV statement and see who you give the most — and who gives you the most. Funny Pidgin rankings and share cards. Got PDF? Convert to Excel at https://www.ilovepdf.com/pdf_to_excel",
 };
 
 export const viewport: Viewport = {

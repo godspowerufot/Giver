@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import Papa from "papaparse";
 import { SPREADSHEET_TOAST } from "@/lib/messages";
 import type { Direction, StatementMeta, Transaction } from "@/lib/types";
 import { detectColumns, parseDirectionToken, type ColumnMap } from "./detectColumns";
@@ -330,8 +331,24 @@ async function parseWorkbook(file: File): Promise<ParseResult> {
   return parseFromMatrix(matrix, file.name, sheetName);
 }
 
+function parseDelimitedText(text: string, fileName: string): ParseResult {
+  const preview = Papa.parse<string[]>(text, {
+    header: false,
+    skipEmptyLines: false,
+  });
+  return parseFromMatrix(preview.data as unknown[][], fileName);
+}
+
+async function parseCsv(file: File): Promise<ParseResult> {
+  const text = await file.text();
+  return parseDelimitedText(text, file.name);
+}
+
 export async function parseLedgerFile(file: File): Promise<ParseResult> {
   const name = file.name.toLowerCase();
+  if (name.endsWith(".csv") || file.type === "text/csv") {
+    return parseCsv(file);
+  }
   if (name.endsWith(".xlsx")) {
     return parseWorkbook(file);
   }
@@ -342,8 +359,10 @@ export async function parseLedgerFile(file: File): Promise<ParseResult> {
 export function isStatementFile(file: File) {
   const name = file.name.toLowerCase();
   return (
+    name.endsWith(".csv") ||
     name.endsWith(".xlsx") ||
     name.endsWith(".xls") ||
+    file.type === "text/csv" ||
     file.type ===
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
     file.type === "application/vnd.ms-excel"

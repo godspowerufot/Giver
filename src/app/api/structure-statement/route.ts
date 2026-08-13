@@ -9,8 +9,10 @@ const MAX_BYTES = 20 * 1024 * 1024;
 function isAllowed(file: File) {
   const name = file.name.toLowerCase();
   return (
+    name.endsWith(".csv") ||
     name.endsWith(".xlsx") ||
     name.endsWith(".xls") ||
+    file.type === "text/csv" ||
     file.type ===
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
     file.type === "application/vnd.ms-excel"
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
     if (!isAllowed(file)) {
       return NextResponse.json(
         {
-          error: "Please upload Excel (.xlsx) only.",
+          error: "Please upload a spreadsheet as Excel (.xlsx) or CSV.",
         },
         { status: 400 },
       );

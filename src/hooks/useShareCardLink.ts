@@ -7,6 +7,22 @@ import {
   type ShareCardPayload,
 } from "@/lib/shareCard";
 
+async function createShareUrl(payload: ShareCardPayload): Promise<string> {
+  try {
+    const res = await fetch("/api/share-card", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("share api failed");
+    const data = (await res.json()) as { url?: string };
+    if (data.url) return data.url;
+  } catch {
+    /* fall back below */
+  }
+  return `${window.location.origin}${shareCardPath(encodeShareCard(payload))}`;
+}
+
 export function useShareCardLink() {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -15,18 +31,16 @@ export function useShareCardLink() {
     setBusy(true);
     setCopied(false);
     try {
-      const token = encodeShareCard(payload);
-      const url = `${window.location.origin}${shareCardPath(token)}`;
+      const url = await createShareUrl(payload);
       const title =
         payload.k === "thanks" ? "Thank-you card · Giver" : "Celebration card · Giver";
-      const text = `${payload.h}\n“${payload.r}”`;
+      const text = `${payload.h}\n“${payload.r}”\n\nOpen on Giver:`;
 
       if (typeof navigator !== "undefined" && navigator.share) {
         try {
           await navigator.share({ title, text, url });
           return { url, shared: true as const };
         } catch (err) {
-          // User cancelled share sheet — still offer copy.
           if (err instanceof DOMException && err.name === "AbortError") {
             return { url, shared: false as const };
           }

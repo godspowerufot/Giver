@@ -8,7 +8,7 @@ import { SPREADSHEET_TOAST } from "@/lib/messages";
 import { isStatementFile } from "@/lib/parse/parseFile";
 
 const ACCEPT =
-  ".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
+  ".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 
 const MEMES = [
   { src: "/money-root-evil.png", alt: "Money makes me happy" },
@@ -86,17 +86,18 @@ export function LandingPage() {
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05),transparent_55%)]" />
 
-      <main className="relative z-10 flex flex-1 flex-col justify-center pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)]">
-        <div className="pt-6 sm:pt-8 md:pt-10">
+      <main className="relative z-10 flex flex-1 flex-col justify-start pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-0">
+        <div className="meme-marquee-stack">
           <MemeMarquee />
-          <div className="mt-2.5 sm:mt-3">
-            <MemeMarquee reverse />
+          <MemeMarquee reverse />
+          <div className="sm:hidden">
+            <MemeMarquee />
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-10 text-center sm:px-8 sm:pb-14 sm:pt-14 md:pt-16">
+        <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-8 text-center sm:px-8 sm:pb-14 sm:pt-14 md:pt-16">
           <p className="landing-fade text-[10px] uppercase tracking-[0.3em] text-zinc-500 sm:text-xs">
-            Excel only · .xlsx
+            Excel · CSV · spreadsheet
           </p>
 
           <h1 className="landing-fade mt-4 font-[family-name:var(--font-display)] text-6xl leading-[0.92] tracking-[-0.07em] text-white sm:text-8xl md:text-[9rem] lg:text-[11rem]">
@@ -110,8 +111,17 @@ export function LandingPage() {
           </p>
 
           <p className="landing-fade mx-auto mt-5 max-w-md text-sm leading-relaxed text-zinc-500 sm:mt-6 sm:text-base md:text-lg">
-            Upload your OPay Excel. Make we expose who dey chop your money —
-            and who dey feed you.
+            Upload your bank spreadsheet. Make we expose who dey chop your money
+            — and who dey feed you. Got PDF?{" "}
+            <a
+              href="https://www.ilovepdf.com/pdf_to_excel"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="italic underline underline-offset-4 decoration-zinc-500 transition hover:text-zinc-300 hover:decoration-zinc-300"
+            >
+              convert to Excel
+            </a>
+            .
           </p>
 
           <div className="landing-fade mt-8 flex flex-col items-center gap-3 sm:mt-10">
@@ -120,9 +130,19 @@ export function LandingPage() {
               busy={busy}
               className="landing-cta-pulse w-full max-w-xs sm:w-auto"
             >
-              {busy ? "E dey work…" : "Drop your Excel here"}
+              {busy ? "E dey work…" : "Drop Excel or CSV here"}
             </UploadButton>
-            <p className="text-xs text-zinc-600 sm:text-sm">PDF no dey enter</p>
+            <p className="text-xs text-zinc-600 sm:text-sm">
+              .xlsx · .xls · .csv · PDF?{" "}
+              <a
+                href="https://www.ilovepdf.com/pdf_to_excel"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="italic underline underline-offset-2 decoration-zinc-600 hover:text-zinc-400"
+              >
+                convert here
+              </a>
+            </p>
           </div>
 
           {error ? (
