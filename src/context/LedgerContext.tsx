@@ -5,14 +5,72 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { computeLedger } from "@/lib/analytics/computeLedger";
 import { SPREADSHEET_TOAST } from "@/lib/messages";
-import { parseLedgerFile } from "@/lib/parse/parseFile";
+import {
+  appendParseResults,
+  mergeParseResults,
+} from "@/lib/parse/mergeStatements";
+import { isStatementFile, parseLedgerFile } from "@/lib/parse/parseFile";
+import { needsAiRestructuring } from "@/lib/parse/needsAiRestructuring";
+import { structureStatementViaApi } from "@/lib/parse/structureClient";
+import type { ParseResult } from "@/lib/parse/parseFile";
 import type { LedgerState } from "@/lib/types";
 import { useToast } from "@/context/ToastContext";
+
+/**
+ * Known CSV layouts → local parse into Transaction[].
+ * Unknown / mismatched CSV layouts → Gemini (chunked for large files).
+ */
+async function parseStatementFile(file: File): Promise<ParseResult> {
+  let local: ParseResult | null = null;
+  try {
+    local = await parseLedgerFile(file);
+  } catch {
+    local = null;
+  }
+
+  if (local && !needsAiRestructuring(local)) {
+    console.info(
+      `[giver] local CSV OK for ${file.name}: ${local.transactions.length} rows (${local.meta.detectedMode})`,
+    );
+    return local;
+  }
+
+  console.info(
+    `[giver] unstructured CSV → Gemini for ${file.name}`,
+    local
+      ? {
+          mode: local.meta.detectedMode,
+          rows: local.sourceRowCount,
+          txs: local.transactions.length,
+        }
+      : { local: "failed" },
+  );
+
+  try {
+    const ai = await structureStatementViaApi(file);
+    if (ai.transactions.length) return ai;
+  } catch (aiErr) {
+    if (local?.transactions.length) {
+      console.warn(
+        `[giver] Gemini failed; keeping local rows for ${file.name}`,
+        aiErr instanceof Error ? aiErr.message : aiErr,
+      );
+      return local;
+    }
+    throw aiErr instanceof Error
+      ? aiErr
+      : new Error("Failed to structure CSV.");
+  }
+
+  if (local?.transactions.length) return local;
+  throw new Error("No transactions found after local + Gemini parse.");
+}
 
 export type DashboardView = "overview" | "people" | "transactions" | "insights";
 
@@ -21,6 +79,7 @@ interface LedgerContextValue extends LedgerState {
   selectedPerson: string | null;
   sidebarOpen: boolean;
   loadFile: (file: File) => Promise<void>;
+  loadFiles: (files: File[], mode?: "replace" | "append") => Promise<void>;
   reset: () => void;
   setView: (view: DashboardView) => void;
   selectPerson: (name: string) => void;
@@ -41,43 +100,96 @@ const LedgerContext = createContext<LedgerContextValue | null>(null);
 export function LedgerProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [state, setState] = useState<LedgerState>(initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [view, setViewState] = useState<DashboardView>("overview");
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const loadFile = useCallback(async (file: File) => {
-    setState((s) => ({ ...s, status: "parsing", error: null }));
-    try {
-      const { transactions, meta } = await parseLedgerFile(file);
-      if (!transactions.length) {
-        throw new Error(
-          "No transactions found. Use an Excel (.xlsx) or CSV export with debit/credit columns or signed amounts.",
-        );
+  const loadFiles = useCallback(
+    async (files: File[], mode: "replace" | "append" = "replace") => {
+      const list = [...files].filter(Boolean);
+      if (!list.length) return;
+
+      const wasReady = stateRef.current.status === "ready";
+      const previous =
+        wasReady
+          ? {
+              meta: stateRef.current.meta,
+              transactions: stateRef.current.transactions,
+              insight: stateRef.current.insight,
+            }
+          : null;
+
+      setState((s) => ({ ...s, status: "parsing", error: null }));
+      try {
+        const invalid = list.find((file) => !isStatementFile(file));
+        if (invalid) throw new Error(SPREADSHEET_TOAST);
+
+        const parsed = [];
+        for (const file of list) {
+          parsed.push(await parseStatementFile(file));
+        }
+
+        const merged =
+          mode === "append" && wasReady
+            ? appendParseResults(
+                previous!.transactions,
+                previous!.meta,
+                parsed,
+              )
+            : mergeParseResults(parsed);
+
+        if (!merged.transactions.length) {
+          throw new Error(
+            "No transactions found. Try another CSV bank/wallet export.",
+          );
+        }
+
+        const insight = computeLedger(merged.transactions);
+        setState({
+          status: "ready",
+          error: null,
+          meta: merged.meta,
+          transactions: merged.transactions,
+          insight,
+        });
+        setViewState("overview");
+        setSelectedPerson(null);
+        setSidebarOpen(false);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to parse file";
+        if (message === SPREADSHEET_TOAST) {
+          toast(SPREADSHEET_TOAST, "error");
+        }
+        if (mode === "append" && previous) {
+          toast(message, "error");
+          setState({
+            status: "ready",
+            error: null,
+            meta: previous.meta,
+            transactions: previous.transactions,
+            insight: previous.insight,
+          });
+          return;
+        }
+        setState({
+          ...initialState,
+          status: "error",
+          error: message,
+        });
       }
-      const insight = computeLedger(transactions);
-      setState({
-        status: "ready",
-        error: null,
-        meta,
-        transactions,
-        insight,
-      });
-      setViewState("overview");
-      setSelectedPerson(null);
-      setSidebarOpen(false);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to parse file";
-      if (message === SPREADSHEET_TOAST) {
-        toast(SPREADSHEET_TOAST, "error");
-      }
-      setState({
-        ...initialState,
-        status: "error",
-        error: message,
-      });
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
+
+  const loadFile = useCallback(
+    async (file: File) => {
+      await loadFiles([file], "replace");
+    },
+    [loadFiles],
+  );
 
   const reset = useCallback(() => {
     setState(initialState);
@@ -107,6 +219,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
       selectedPerson,
       sidebarOpen,
       loadFile,
+      loadFiles,
       reset,
       setView,
       selectPerson,
@@ -119,6 +232,7 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
       selectedPerson,
       sidebarOpen,
       loadFile,
+      loadFiles,
       reset,
       setView,
       selectPerson,

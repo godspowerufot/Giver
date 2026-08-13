@@ -68,6 +68,25 @@ export function parseDate(value: unknown): Date | null {
     );
   }
 
+  // "08/12/2026 02:11:31 PM" / "08/12/2026"
+  const us = raw.match(
+    /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?/i,
+  );
+  if (us) {
+    let hour = Number(us[4] ?? 0);
+    const meridiem = (us[7] ?? "").toUpperCase();
+    if (meridiem === "PM" && hour < 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    return new Date(
+      Number(us[3]),
+      Number(us[1]) - 1,
+      Number(us[2]),
+      hour,
+      Number(us[5] ?? 0),
+      Number(us[6] ?? 0),
+    );
+  }
+
   const fallback = new Date(raw);
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 }

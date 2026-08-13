@@ -9,6 +9,10 @@ import { parseAmount, parseDate } from "./money";
 export interface ParseResult {
   transactions: Transaction[];
   meta: StatementMeta;
+  /** Present for local spreadsheet/matrix parses. */
+  columnMap?: ColumnMap;
+  /** Non-empty source rows before transaction filtering. */
+  sourceRowCount?: number;
 }
 
 function cell(row: Record<string, unknown>, key?: string): unknown {
@@ -69,10 +73,17 @@ function findHeaderRow(matrix: unknown[][]): number {
   for (let i = 0; i < Math.min(matrix.length, 40); i++) {
     const row = matrix[i] ?? [];
     const joined = row.map((c) => String(c ?? "").toLowerCase()).join(" | ");
-    if (
-      (joined.includes("description") || joined.includes("narration")) &&
-      (joined.includes("debit") || joined.includes("credit") || joined.includes("amount"))
-    ) {
+    const hasMoney =
+      joined.includes("debit") ||
+      joined.includes("credit") ||
+      joined.includes("amount");
+    const hasLabel =
+      joined.includes("description") ||
+      joined.includes("narration") ||
+      joined.includes("recipient") ||
+      joined.includes("particulars") ||
+      joined.includes("details");
+    if (hasMoney && (hasLabel || joined.includes("type") || joined.includes("date"))) {
       return i;
     }
   }
@@ -97,6 +108,26 @@ function extractMetaFromPreamble(
     }
   }
   return meta;
+}
+
+export function parseFromMatrix(
+  matrix: unknown[][],
+  fileName: string,
+  sheetName?: string,
+): ParseResult {
+  const { rows, map, preambleMeta } = matrixToObjects(matrix);
+  const transactions = buildTransactions(rows, map);
+  return {
+    transactions,
+    meta: {
+      ...preambleMeta,
+      fileName,
+      sheetName,
+      detectedMode: map.mode,
+    },
+    columnMap: map,
+    sourceRowCount: rows.length,
+  };
 }
 
 function matrixToObjects(matrix: unknown[][]): {
@@ -135,13 +166,18 @@ function buildTransactions(
   const out: Transaction[] = [];
 
   rows.forEach((row, index) => {
-    const description = String(cell(row, map.description) ?? "").trim();
+    const description = String(
+      cell(row, map.description) ?? cell(row, map.counterparty) ?? "",
+    ).trim();
     if (!description) return;
 
     const amount = resolveAmount(map, row);
     if (!amount || amount <= 0) return;
 
     const direction = resolveDirection(map, row, description, amount);
+    const fromCol = map.counterparty
+      ? String(cell(row, map.counterparty) ?? "").trim() || null
+      : null;
     const parts = extractCounterparty(description);
     const kind = classifyKind(description);
     const date = parseDate(cell(row, map.date));
@@ -152,7 +188,7 @@ function buildTransactions(
       description,
       amount,
       direction,
-      counterparty: parts.name,
+      counterparty: fromCol || parts.name,
       bank: parts.bank,
       account: parts.account,
       channel: cell(row, map.channel) != null ? String(cell(row, map.channel)) : null,
@@ -172,19 +208,7 @@ function parseDelimitedText(text: string, fileName: string): ParseResult {
     header: false,
     skipEmptyLines: false,
   });
-
-  const matrix = preview.data as unknown[][];
-  const { rows, map, preambleMeta } = matrixToObjects(matrix);
-  const transactions = buildTransactions(rows, map);
-
-  return {
-    transactions,
-    meta: {
-      ...preambleMeta,
-      fileName,
-      detectedMode: map.mode,
-    },
-  };
+  return parseFromMatrix(preview.data as unknown[][], fileName);
 }
 
 async function parseCsv(file: File): Promise<ParseResult> {
@@ -232,18 +256,7 @@ async function parseWorkbook(file: File): Promise<ParseResult> {
     matrix.push(line);
   });
 
-  const { rows, map, preambleMeta } = matrixToObjects(matrix);
-  const transactions = buildTransactions(rows, map);
-
-  return {
-    transactions,
-    meta: {
-      ...preambleMeta,
-      fileName: file.name,
-      sheetName: preferred.name,
-      detectedMode: map.mode,
-    },
-  };
+  return parseFromMatrix(matrix, file.name, preferred.name);
 }
 
 export async function parseLedgerFile(file: File): Promise<ParseResult> {
@@ -251,8 +264,10 @@ export async function parseLedgerFile(file: File): Promise<ParseResult> {
   if (name.endsWith(".csv") || file.type === "text/csv") {
     return parseCsv(file);
   }
-  if (name.endsWith(".xlsx")) {
-    return parseWorkbook(file);
-  }
   throw new Error(SPREADSHEET_TOAST);
+}
+
+export function isStatementFile(file: File) {
+  const name = file.name.toLowerCase();
+  return name.endsWith(".csv") || file.type === "text/csv";
 }

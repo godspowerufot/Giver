@@ -46,7 +46,7 @@ export function PersonFlowChart({ timeline }: { timeline: DayFlow[] }) {
         title="Flow over time"
         subtitle="Sent and received by day"
       />
-      <div className="h-52 px-1 py-3 sm:h-64 sm:px-4 sm:py-4">
+      <div className="h-52 min-w-0 overflow-hidden px-1 py-3 sm:h-64 sm:px-4 sm:py-4">
         {timeline.length === 0 ? (
           <p className="px-3 py-10 text-sm text-zinc-500">No dated transfers to chart.</p>
         ) : (
@@ -123,12 +123,12 @@ export function PersonSplitChart({
   return (
     <Panel>
       <PanelHeader title="Sent vs received" subtitle="Share of total flow with this person" />
-      <div className="flex h-52 flex-col items-center gap-3 px-3 py-3 sm:h-64 sm:flex-row sm:gap-2 sm:px-4 sm:py-4">
+      <div className="flex h-52 min-w-0 flex-col items-center gap-3 overflow-hidden px-3 py-3 sm:h-64 sm:flex-row sm:gap-2 sm:px-4 sm:py-4">
         {data.length === 0 ? (
           <p className="text-sm text-zinc-500">No amounts to compare.</p>
         ) : (
           <>
-            <div className="h-40 w-full min-w-0 sm:h-full sm:w-1/2">
+            <div className="h-40 w-full min-w-0 overflow-hidden sm:h-full sm:w-1/2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -181,7 +181,7 @@ export function PersonBarChart({ timeline }: { timeline: DayFlow[] }) {
   return (
     <Panel>
       <PanelHeader title="Busiest days" subtitle="Highest combined volume" />
-      <div className="h-52 px-1 py-3 sm:h-64 sm:px-4 sm:py-4">
+      <div className="h-52 min-w-0 overflow-hidden px-1 py-3 sm:h-64 sm:px-4 sm:py-4">
         {topDays.length === 0 ? (
           <p className="px-3 py-10 text-sm text-zinc-500">No activity days yet.</p>
         ) : (

@@ -39,7 +39,7 @@ export function MetricsStrip() {
       {items.map((item, i) => (
         <div
           key={item.label}
-          className="metric-enter rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-transparent px-3 py-3 sm:px-5 sm:py-4"
+          className="metric-enter min-w-0 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-transparent px-3 py-3 sm:px-5 sm:py-4"
           style={{ animationDelay: `${i * 60}ms` }}
         >
           <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 sm:text-[11px] sm:tracking-[0.18em]">

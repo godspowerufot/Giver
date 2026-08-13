@@ -9,7 +9,7 @@ export function Panel({
 }) {
   return (
     <section
-      className={`rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm ${className}`}
+      className={`min-w-0 max-w-full overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm ${className}`}
     >
       {children}
     </section>

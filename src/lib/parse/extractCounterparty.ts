@@ -3,21 +3,33 @@ import type { TransactionKind } from "@/lib/types";
 const INTERNAL_PATTERNS = [
   /owealth/i,
   /spend\s*&\s*save/i,
-  /auto-?save/i,
+  /cash\s*box/i,
+  /auto[-\s]?save/i,
   /add money/i,
   /vat on/i,
-  /stamp duty/i,
   /ussd charge/i,
   /transfer fee/i,
 ];
 
-const BILL_PATTERNS = [/mobile data/i, /airtime/i, /electricity/i, /cable/i];
+const BILL_PATTERNS = [
+  /mobile data/i,
+  /airtime/i,
+  /buy data/i,
+  /electricity/i,
+  /cable/i,
+];
 
 export function classifyKind(description: string): TransactionKind {
   if (INTERNAL_PATTERNS.some((p) => p.test(description))) return "internal";
-  if (/vat|stamp duty|ussd charge|fee/i.test(description)) return "fee";
+  if (/vat|stamp duty|ussd charge|levy|fee/i.test(description)) return "fee";
   if (BILL_PATTERNS.some((p) => p.test(description))) return "bill";
-  if (/transfer to|transfer from/i.test(description)) return "transfer";
+  if (
+    /transfer to|transfer from|^send to|^received from|pos transfer/i.test(
+      description,
+    )
+  ) {
+    return "transfer";
+  }
   return "other";
 }
 

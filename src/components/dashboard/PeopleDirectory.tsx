@@ -22,9 +22,9 @@ export function PeopleDirectory() {
   const listMaxHeight = HEADER_HEIGHT_PX + VISIBLE_ROWS * ROW_HEIGHT_PX;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+    <div className="w-full min-w-0 max-w-full space-y-5 overflow-x-clip">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h1 className="font-[family-name:var(--font-display)] text-2xl tracking-tight text-white sm:text-3xl">
             People
           </h1>

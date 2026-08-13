@@ -27,9 +27,11 @@ export function Sidebar() {
       <div className="hidden w-[260px] shrink-0 lg:block" aria-hidden />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[min(280px,88vw)] flex-col border-r border-white/10 bg-[#0a0a0c] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] lg:w-[260px] ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } transition-transform duration-200`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-[min(280px,88vw)] flex-col border-r border-white/10 bg-[#0a0a0c] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] transition-transform duration-200 lg:w-[260px] ${
+          sidebarOpen
+            ? "translate-x-0"
+            : "pointer-events-none -translate-x-full max-lg:invisible lg:pointer-events-auto lg:visible lg:translate-x-0"
+        }`}
       >
         <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-5 sm:py-6">
           <div className="min-w-0">

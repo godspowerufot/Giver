@@ -5,11 +5,9 @@ import { DashboardPreview } from "@/components/landing/DashboardPreview";
 import { useToast } from "@/context/ToastContext";
 import { useLedger } from "@/hooks/useLedger";
 import { SPREADSHEET_TOAST } from "@/lib/messages";
+import { isStatementFile } from "@/lib/parse/parseFile";
 
-function isExcelOrCsv(file: File) {
-  const name = file.name.toLowerCase();
-  return name.endsWith(".xlsx") || name.endsWith(".csv");
-}
+const ACCEPT = ".csv,text/csv";
 
 function UploadLabel({
   htmlFor,
@@ -35,22 +33,22 @@ function UploadLabel({
 }
 
 export function LandingPage() {
-  const { loadFile, status, error } = useLedger();
+  const { loadFiles, status, error } = useLedger();
   const { toast } = useToast();
   const inputId = useId();
   const busy = status === "parsing";
 
   const onFiles = useCallback(
     async (files: FileList | null) => {
-      const file = files?.[0];
-      if (!file) return;
-      if (!isExcelOrCsv(file)) {
+      const list = files ? [...files] : [];
+      if (!list.length) return;
+      if (list.some((file) => !isStatementFile(file))) {
         toast(SPREADSHEET_TOAST, "error");
         return;
       }
-      await loadFile(file);
+      await loadFiles(list, "replace");
     },
-    [loadFile, toast],
+    [loadFiles, toast],
   );
 
   return (
@@ -76,7 +74,7 @@ export function LandingPage() {
             style={{ animationDelay: "120ms" }}
           >
             <UploadLabel htmlFor={inputId} busy={busy} className="landing-cta-pulse">
-              {busy ? "Reading…" : "Upload Excel or CSV"}
+              {busy ? "Parsing…" : "Upload CSV"}
             </UploadLabel>
           </div>
         </div>
@@ -94,9 +92,8 @@ export function LandingPage() {
               Ranked in seconds.
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400 sm:text-base">
-              Export your bank or wallet statement as Excel (.xlsx) or CSV, then
-              upload it here. See who gets your money — the file never leaves this
-              device.
+              Upload one or more CSV statements. Known layouts parse on-device;
+              unknown bank formats are structured with Gemini Flash.
             </p>
             <div className="relative z-20 mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               <UploadLabel
@@ -104,10 +101,10 @@ export function LandingPage() {
                 busy={busy}
                 className="w-full landing-cta-pulse sm:w-auto"
               >
-                {busy ? "Reading…" : "Choose Excel or CSV"}
+                {busy ? "Parsing…" : "Choose CSV"}
               </UploadLabel>
               <p className="text-center text-xs text-zinc-500 sm:text-left">
-                Excel (.xlsx) or CSV · not PDF · stays on this device
+                CSV only · multi-select supported
               </p>
             </div>
             {error ? (
@@ -131,8 +128,8 @@ export function LandingPage() {
             {[
               {
                 step: "01",
-                title: "Upload",
-                body: "Export as Excel (.xlsx) or CSV from your bank or wallet. Parsed only in your browser — not PDF.",
+                title: "Upload CSV",
+                body: "Export CSV from your bank or wallet — one file or several months.",
               },
               {
                 step: "02",
@@ -170,8 +167,8 @@ export function LandingPage() {
               Giver
             </p>
             <p className="max-w-md text-xs leading-relaxed text-zinc-600">
-              Your file is not uploaded or saved anywhere. Close the tab and it is
-              gone.
+              Known CSVs stay in your browser. Unfamiliar layouts are structured
+              briefly with Gemini, then discarded.
             </p>
           </div>
         </footer>
@@ -180,7 +177,8 @@ export function LandingPage() {
       <input
         id={inputId}
         type="file"
-        accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        multiple
+        accept={ACCEPT}
         className="sr-only"
         disabled={busy}
         onChange={(e) => {

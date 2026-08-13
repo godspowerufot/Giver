@@ -21,7 +21,7 @@ const body = Outfit({
 export const metadata: Metadata = {
   title: "Giver — Check who you give the most",
   description:
-    "Upload an Excel (.xlsx) or CSV wallet statement and see who you send the most money to — ranked recipients, charts, nets, and spend suggestions.",
+    "Upload CSV wallet statements and see who you send the most money to — ranked recipients, charts, nets, and spend suggestions.",
 };
 
 export const viewport: Viewport = {
@@ -34,8 +34,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
-      <body className="min-h-full overflow-x-clip">
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} h-full overflow-x-clip antialiased`}
+    >
+      <body className="min-h-full w-full max-w-[100vw] overflow-x-clip">
         <ToastProvider>
           <LedgerProvider>
             <AppShell>{children}</AppShell>

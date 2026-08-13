@@ -72,7 +72,7 @@ function RankBarChart({
   return (
     <Panel className={panelClassName}>
       <PanelHeader title={title} subtitle={subtitle} />
-      <div className="h-64 px-2 py-4 sm:h-80 sm:px-6 sm:py-6">
+      <div className="h-64 min-w-0 overflow-hidden px-2 py-4 sm:h-80 sm:px-6 sm:py-6">
         {data.length === 0 ? (
           <p className="px-3 py-10 text-sm text-zinc-500">
             {mode === "sent"
@@ -87,8 +87,8 @@ function RankBarChart({
               barCategoryGap={isMobile ? "22%" : "18%"}
               margin={{
                 top: 8,
-                right: isMobile ? 8 : 20,
-                left: 4,
+                right: isMobile ? 4 : 20,
+                left: 0,
                 bottom: 8,
               }}
             >
@@ -103,7 +103,7 @@ function RankBarChart({
               <YAxis
                 type="category"
                 dataKey="name"
-                width={isMobile ? 72 : 110}
+                width={isMobile ? 64 : 110}
                 tick={{ fill: "#d4d4d8", fontSize: isMobile ? 10 : 11 }}
                 axisLine={false}
                 tickLine={false}
@@ -191,12 +191,12 @@ export function FlowSplitChart() {
         title="Person transfer volume"
         subtitle="Outbound vs inbound person-to-person totals"
       />
-      <div className="flex min-h-56 flex-col items-center gap-4 px-4 py-5 sm:h-80 sm:flex-row sm:px-6 sm:py-6">
+      <div className="flex min-h-56 min-w-0 flex-col items-center gap-4 overflow-hidden px-4 py-5 sm:h-80 sm:flex-row sm:px-6 sm:py-6">
         {data.length === 0 ? (
           <p className="text-sm text-zinc-500">No person transfer volume yet.</p>
         ) : (
           <>
-            <div className="h-52 w-full min-w-0 sm:h-full sm:flex-1">
+            <div className="h-52 w-full min-w-0 overflow-hidden sm:h-full sm:flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                   <Pie

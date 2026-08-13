@@ -68,8 +68,15 @@ export interface StatementMeta {
   accountNumber?: string;
   period?: string;
   fileName: string;
+  /** Present when multiple statements were merged in one session. */
+  fileNames?: string[];
   sheetName?: string;
-  detectedMode: "debit_credit" | "signed_amount" | "direction_column" | "inferred";
+  detectedMode:
+    | "debit_credit"
+    | "signed_amount"
+    | "direction_column"
+    | "inferred"
+    | "ai_structured";
 }
 
 export interface LedgerState {

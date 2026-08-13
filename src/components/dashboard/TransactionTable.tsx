@@ -94,6 +94,11 @@ export function TransactionTable() {
               </div>
             </div>
             <p className="mt-2 line-clamp-2 text-xs text-zinc-500">{tx.description}</p>
+            {tx.raw.sourceFile ? (
+              <p className="mt-1 truncate text-[10px] text-zinc-600">
+                {tx.raw.sourceFile}
+              </p>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -107,6 +112,7 @@ export function TransactionTable() {
               <th className="px-3 py-3 font-medium">Counterparty</th>
               <th className="px-3 py-3 font-medium">Direction</th>
               <th className="px-3 py-3 font-medium">Description</th>
+              <th className="px-3 py-3 font-medium">Source</th>
               <th className="px-5 py-3 font-medium text-right">Amount</th>
             </tr>
           </thead>
@@ -144,6 +150,9 @@ export function TransactionTable() {
                 </td>
                 <td className="max-w-[280px] truncate px-3 py-3 text-zinc-500">
                   {tx.description}
+                </td>
+                <td className="max-w-[140px] truncate px-3 py-3 text-xs text-zinc-600">
+                  {tx.raw.sourceFile ?? "—"}
                 </td>
                 <td className="whitespace-nowrap px-5 py-3 text-right text-zinc-100">
                   {formatNaira(tx.amount)}

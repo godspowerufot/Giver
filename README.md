@@ -1,50 +1,27 @@
 # Giver
 
-Check who you give the most. Upload an **Excel (.xlsx)** or **CSV** wallet or bank statement to rank recipients, see who sends you money, net balances, and spend-down suggestions.
+Check who you give the most. Upload **CSV** wallet/bank statements (one or many) to rank recipients, nets, and spend suggestions.
 
-**Supported formats:** Excel (`.xlsx`) and CSV (`.csv`). PDF is not supported.
+**Supported format:** CSV (`.csv`) only for now.
 
-**Privacy:** Your statement is parsed entirely in the browser. Files are not uploaded or saved to any server.
+## How unstructured CSVs are handled
 
-## Stack
+1. **Local first** — detect columns (`date`, `amount`, `debit`/`credit`, `type`, `recipient`, `narration`, …) and map into Giver’s `Transaction[]`.
+2. **If the layout doesn’t match** (unknown headers, mostly undated/unknown direction, low row yield) → **Gemini Flash** rewrites the CSV into that same shape.
+3. **Large CSVs** are sent to Gemini in **chunks** (~120 rows) and merged/deduped.
+4. Multiple CSVs can be uploaded and merged in one session.
 
-- Next.js (App Router)
-- Tailwind CSS
-- React Context API
-- `exceljs` + `papaparse` (client-side parse)
+## Privacy
 
-## Run
+Known layouts stay in the browser. Unfamiliar CSVs are sent briefly to Gemini to extract rows, then discarded. Your ranked ledger stays in the session.
+
+## Setup
 
 ```bash
+cp .env.example .env.local
+# set GEMINI_API_KEY=...
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and choose an Excel `.xlsx` or `.csv` file.
-
-## Architecture
-
-```
-src/
-  app/                 # routes + global styles
-  components/
-    layout/            # shell, header
-    upload/            # dropzone
-    dashboard/         # metrics, rankings, tables
-    ui/                # buttons, panels
-  context/             # LedgerProvider + state
-  hooks/               # useLedger
-  lib/
-    parse/             # column detection, money, counterparties
-    analytics/         # aggregates + recommendations
-    types.ts
-    format.ts
-```
-
-## Direction detection
-
-The parser auto-detects:
-
-1. Debit / Credit columns (OPay-style statements)
-2. Signed amounts (negative = out)
-3. A type/direction column (`sent` / `received`, `debit` / `credit`)
+Open [http://localhost:3000](http://localhost:3000) and choose a `.csv` file.
