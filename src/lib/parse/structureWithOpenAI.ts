@@ -162,6 +162,23 @@ function parseChunkOrThrow(raw: string, fileName: string): ParseResult {
   return parsed;
 }
 
+function isCreditsError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    /\b429\b/.test(msg) ||
+    /no credits remaining/i.test(msg) ||
+    /insufficient_quota/i.test(msg) ||
+    /rate.?limit/i.test(msg)
+  );
+}
+
+class OpenAICreditsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OpenAICreditsError";
+  }
+}
+
 async function structureOneChunk(
   client: OpenAI,
   model: string,
@@ -169,23 +186,31 @@ async function structureOneChunk(
   chunk: string,
   note: string,
 ): Promise<ParseResult> {
-  const raw = await generateFromTextChunk(client, model, fileName, chunk, note);
   try {
-    return parseChunkOrThrow(raw, fileName);
+    const raw = await generateFromTextChunk(client, model, fileName, chunk, note);
+    try {
+      return parseChunkOrThrow(raw, fileName);
+    } catch (err) {
+      console.warn(
+        `[giver] chunk JSON parse failed; retrying compact`,
+        err instanceof Error ? err.message : err,
+      );
+      const retryRaw = await generateFromTextChunk(
+        client,
+        model,
+        fileName,
+        chunk,
+        `${note}\nIMPORTANT: Previous reply was invalid/truncated JSON. Return fewer fields, shorter descriptions, valid JSON only.`,
+      );
+      return parseChunkOrThrow(retryRaw, fileName);
+    }
   } catch (err) {
-    // Retry once with a clearer "compact JSON" reminder.
-    console.warn(
-      `[giver] chunk JSON parse failed; retrying compact`,
-      err instanceof Error ? err.message : err,
-    );
-    const retryRaw = await generateFromTextChunk(
-      client,
-      model,
-      fileName,
-      chunk,
-      `${note}\nIMPORTANT: Previous reply was invalid/truncated JSON. Return fewer fields, shorter descriptions, valid JSON only.`,
-    );
-    return parseChunkOrThrow(retryRaw, fileName);
+    if (isCreditsError(err)) {
+      throw new OpenAICreditsError(
+        "OpenAI has no credits left. Add billing, or upload an OPay/wallet CSV so Giver can parse locally.",
+      );
+    }
+    throw err;
   }
 }
 
@@ -236,6 +261,8 @@ async function structureDelimitedText(
           : "Extract every money row in this data.",
       );
     } catch (err) {
+      if (err instanceof OpenAICreditsError) throw err;
+
       const lines = chunk.split(/\r?\n/);
       if (lines.length < 8) {
         console.warn(
@@ -264,6 +291,7 @@ async function structureDelimitedText(
           );
           if (parsed.transactions.length) recovered.push(parsed);
         } catch (halfErr) {
+          if (halfErr instanceof OpenAICreditsError) throw halfErr;
           console.warn(
             `[giver] half-chunk skipped`,
             halfErr instanceof Error ? halfErr.message : halfErr,

@@ -13,11 +13,11 @@ export function matchesGiverColumnMap(map: ColumnMap | undefined): boolean {
   }
 
   if (map.mode === "direction_column") {
-    return Boolean(map.amount && map.direction && map.date);
+    // Date helps but OPay-like sheets with amount+type+description are enough.
+    return Boolean(map.amount && map.direction);
   }
 
   if (map.mode === "signed_amount") {
-    // Require date so random "amount" sheets don't count as matched.
     return Boolean(map.amount && map.date);
   }
 
@@ -25,23 +25,21 @@ export function matchesGiverColumnMap(map: ColumnMap | undefined): boolean {
 }
 
 /**
- * True when local parse should be discarded and OpenAI rewrite the file
- * into Giver's Transaction[] shape.
+ * True when local parse is too weak and OpenAI should rewrite the file.
+ * Do NOT send OPay/local-good sheets to OpenAI.
  */
 export function needsAiRestructuring(result: ParseResult): boolean {
-  const { transactions, meta, columnMap, sourceRowCount } = result;
+  const { transactions, columnMap, sourceRowCount } = result;
 
   if (!transactions.length) return true;
 
   if (!matchesGiverColumnMap(columnMap)) return true;
 
-  if (meta.detectedMode === "inferred") return true;
-
-  // Local parse kept almost nothing from the sheet → wrong columns.
+  // Local kept almost nothing from the sheet → wrong columns.
   if (
     typeof sourceRowCount === "number" &&
-    sourceRowCount >= 5 &&
-    transactions.length / sourceRowCount < 0.35
+    sourceRowCount >= 8 &&
+    transactions.length / sourceRowCount < 0.15
   ) {
     return true;
   }
@@ -49,11 +47,11 @@ export function needsAiRestructuring(result: ParseResult): boolean {
   const unknownShare =
     transactions.filter((tx) => tx.direction === "unknown").length /
     transactions.length;
-  if (unknownShare > 0.35) return true;
+  if (unknownShare > 0.55) return true;
 
   const undatedShare =
     transactions.filter((tx) => !tx.date).length / transactions.length;
-  if (undatedShare > 0.5) return true;
+  if (undatedShare > 0.75) return true;
 
   return false;
 }

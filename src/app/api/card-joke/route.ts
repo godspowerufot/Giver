@@ -69,29 +69,38 @@ Rules: funny, warm + a little savage/playful; Pidgin Nigerian vibe; headline sho
         ? `Name: ${name}. They got about ${sharePct.toFixed(0)}% of this person's transfers. Invent a brand-new Pidgin roast celebration.`
         : `Name: ${name}. They sent about ${sharePct.toFixed(0)}% of money this person received. Invent a brand-new Pidgin thank-you joke.`;
 
-    const response = await client.chat.completions.create({
-      model: getModel(),
-      temperature: 1.1,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    });
+    try {
+      const response = await client.chat.completions.create({
+        model: getModel(),
+        temperature: 1.1,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      });
 
-    const raw = response.choices[0]?.message?.content?.trim() ?? "";
-    const parsed = JSON.parse(raw) as { headline?: string; reply?: string };
-    const headline = String(parsed.headline ?? "").trim();
-    const reply = String(parsed.reply ?? "").trim();
+      const raw = response.choices[0]?.message?.content?.trim() ?? "";
+      const parsed = JSON.parse(raw) as { headline?: string; reply?: string };
+      const headline = String(parsed.headline ?? "").trim();
+      const reply = String(parsed.reply ?? "").trim();
 
-    if (!headline || !reply) {
+      if (!headline || !reply) {
+        return NextResponse.json(fallback(kind, name, sharePct));
+      }
+
+      return NextResponse.json({
+        headline: headline.slice(0, 120),
+        reply: reply.slice(0, 400),
+      } satisfies CelebrationLines);
+    } catch (aiErr) {
+      // No credits / rate limit / model errors → always use stored Pidgin jokes.
+      console.warn(
+        "[card-joke] OpenAI failed; using stored jokes",
+        aiErr instanceof Error ? aiErr.message : aiErr,
+      );
       return NextResponse.json(fallback(kind, name, sharePct));
     }
-
-    return NextResponse.json({
-      headline: headline.slice(0, 120),
-      reply: reply.slice(0, 400),
-    } satisfies CelebrationLines);
   } catch (err) {
     console.error("[card-joke]", err);
     return NextResponse.json(fallback(kind, name, sharePct));

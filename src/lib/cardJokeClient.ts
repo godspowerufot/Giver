@@ -3,7 +3,17 @@ import { buildCelebration, buildThankYou } from "@/lib/celebrationCopy";
 
 export type CardJokeKind = "celebration" | "thanks";
 
-/** Ask the server for a fresh Pidgin joke; falls back locally if the API fails. */
+function localJoke(
+  kind: CardJokeKind,
+  name: string,
+  sharePct: number,
+): CelebrationLines {
+  return kind === "celebration"
+    ? buildCelebration(name, sharePct)
+    : buildThankYou(name, sharePct);
+}
+
+/** Ask the server for a Pidgin joke; always falls back to stored jokes if AI fails. */
 export async function fetchCardJoke(opts: {
   kind: CardJokeKind;
   name: string;
@@ -15,13 +25,10 @@ export async function fetchCardJoke(opts: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(opts),
     });
-    if (!res.ok) throw new Error("joke api failed");
-    const data = (await res.json()) as CelebrationLines;
-    if (!data?.headline || !data?.reply) throw new Error("empty joke");
-    return data;
+    const data = (await res.json().catch(() => null)) as CelebrationLines | null;
+    if (data?.headline && data?.reply) return data;
   } catch {
-    return opts.kind === "celebration"
-      ? buildCelebration(opts.name, opts.sharePct)
-      : buildThankYou(opts.name, opts.sharePct);
+    /* use stored jokes */
   }
+  return localJoke(opts.kind, opts.name, opts.sharePct);
 }
