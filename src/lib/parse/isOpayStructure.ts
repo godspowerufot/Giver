@@ -2,34 +2,37 @@ import { matchesGiverColumnMap } from "@/lib/parse/needsAiRestructuring";
 import type { ParseResult } from "@/lib/parse/parseFile";
 
 /**
- * OPay / similar wallet exports we can parse locally without OpenAI.
- * Typical columns: date, recipient, amount, type, description, transaction_id.
+ * True when the sheet matches OPay / wallet export layout.
+ * Those files use local parse only — no OpenAI.
  */
 export function isOpayStructure(result: ParseResult): boolean {
+  if (!result.transactions.length) return false;
+
   const fileName = (result.meta.fileName ?? "").toLowerCase();
-  // OPay exports often look like: Name_9058386152_20260814025819.xlsx
-  if (
+  // OPay app exports often look like: Name_9058386152_20260814025819.xlsx
+  const looksLikeWalletFile =
     /opay|palmpay|moniepoint|kuda|fairmoney/.test(fileName) ||
-    /_\d{10,13}_\d{10,}/.test(fileName)
-  ) {
-    return matchesGiverColumnMap(result.columnMap) || result.transactions.length > 0;
-  }
+    /_\d{10,13}_\d{10,}/.test(fileName);
 
   const map = result.columnMap;
-  if (!map || !matchesGiverColumnMap(map)) return false;
+  if (!map) return false;
 
-  // Classic wallet shape: amount + type/direction (+ recipient).
-  if (map.mode === "direction_column" && map.amount && map.direction) {
-    if (map.counterparty) return true;
+  // Classic OPay columns: amount + type/direction (+ description).
+  const classicWallet =
+    map.mode === "direction_column" &&
+    Boolean(map.amount && map.direction && map.description);
+
+  if (classicWallet) {
+    if (map.counterparty || looksLikeWalletFile) return true;
 
     const sample = result.transactions
-      .slice(0, 25)
+      .slice(0, 30)
       .map((tx) => `${tx.description} ${Object.values(tx.raw).join(" ")}`)
       .join(" ")
       .toLowerCase();
 
     if (
-      /opay|palmpay|moniepoint|transfer to|transfer from|money transferred|received from|sent to/.test(
+      /opay|palmpay|moniepoint|transfer to|transfer from|money transferred|received from|sent to|wallet/.test(
         sample,
       )
     ) {
@@ -37,21 +40,15 @@ export function isOpayStructure(result: ParseResult): boolean {
     }
   }
 
+  // Named wallet file with any solid Giver column map.
+  if (looksLikeWalletFile && matchesGiverColumnMap(map)) {
+    return true;
+  }
+
   return false;
 }
 
-/**
- * Local parse is good enough — skip OpenAI.
- * Prefer any well-mapped sheet with usable money rows.
- */
+/** Use local parse (skip OpenAI) only for OPay / wallet structure. */
 export function canUseLocalStructure(result: ParseResult): boolean {
-  if (!result.transactions.length) return false;
-  if (!matchesGiverColumnMap(result.columnMap)) return false;
-
-  if (isOpayStructure(result)) return true;
-
-  const unknownShare =
-    result.transactions.filter((tx) => tx.direction === "unknown").length /
-    result.transactions.length;
-  return unknownShare <= 0.4;
+  return isOpayStructure(result);
 }

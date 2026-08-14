@@ -63,8 +63,13 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("[structure-statement]", err);
-    const message =
+    const raw =
       err instanceof Error ? err.message : "Failed to structure statement.";
+    // Never leak provider names into the UI.
+    const message =
+      /openai|open\s*ai/i.test(raw)
+        ? "Could not read that statement. Try Excel (.xlsx) or CSV, or an OPay/wallet export."
+        : raw;
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

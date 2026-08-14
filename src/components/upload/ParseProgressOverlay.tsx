@@ -4,8 +4,8 @@ import type { ParseProgress } from "@/lib/types";
 
 const STAGE_HINT: Record<ParseProgress["stage"], string> = {
   reading: "Opening your statement",
-  checking: "Detecting bank layout",
-  structuring: "Normalizing rows",
+  checking: "Detecting statement layout",
+  structuring: "Organizing your rows",
   ranking: "Building your rankings",
   done: "Ready",
 };

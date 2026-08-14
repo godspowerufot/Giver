@@ -51,8 +51,8 @@ function startProgressTicker(
 }
 
 /**
- * OPay / known wallet layout → local parse (no AI).
- * Anything else → OpenAI structures it before display.
+ * OPay format → local parse only.
+ * Anything else → OpenAI structures the data.
  */
 async function parseStatementFile(
   file: File,
@@ -65,7 +65,6 @@ async function parseStatementFile(
     detail: file.name,
   });
 
-  // Always try local parse first — OPay-shaped sheets skip OpenAI entirely.
   let local: ParseResult | null = null;
   try {
     onProgress({
@@ -86,46 +85,21 @@ async function parseStatementFile(
     detail: file.name,
   });
 
-  const useLocal =
+  // Rule: OPay structure → local only. Not OPay → OpenAI.
+  const isOpay =
     local &&
     canUseLocalStructure(local) &&
     !needsAiRestructuring(local);
 
-  // If local already got solid money rows, never burn OpenAI credits.
-  if (useLocal && local) {
+  if (isOpay && local) {
     console.info(
-      `[giver] OPay/local structure OK for ${file.name}: ${local.transactions.length} rows — skip OpenAI`,
+      `[giver] OPay format for ${file.name}: ${local.transactions.length} rows — local parse, skip OpenAI`,
     );
     onProgress({
       percent: 78,
-      label: "Wallet format recognized…",
-      stage: "ranking",
-      detail: "No AI needed",
-    });
-    await new Promise((r) => setTimeout(r, 200));
-    onProgress({
-      percent: 94,
-      label: "Preparing rankings…",
+      label: "OPay format recognized…",
       stage: "ranking",
       detail: file.name,
-    });
-    return local;
-  }
-
-  // Soft local win: mapped columns + enough txs → still skip AI.
-  if (
-    local &&
-    local.transactions.length >= 5 &&
-    !needsAiRestructuring(local)
-  ) {
-    console.info(
-      `[giver] local structure usable for ${file.name}: ${local.transactions.length} rows — skip OpenAI`,
-    );
-    onProgress({
-      percent: 78,
-      label: "Statement format recognized…",
-      stage: "ranking",
-      detail: "No AI needed",
     });
     await new Promise((r) => setTimeout(r, 200));
     onProgress({
@@ -139,7 +113,7 @@ async function parseStatementFile(
 
   const lower = file.name.toLowerCase();
   console.info(
-    `[giver] non-OPay / unknown layout → OpenAI for ${file.name}`,
+    `[giver] not OPay format → OpenAI for ${file.name}`,
     local
       ? {
           mode: local.meta.detectedMode,
@@ -154,8 +128,8 @@ async function parseStatementFile(
     38,
     88,
     lower.endsWith(".xlsx") || lower.endsWith(".xls")
-      ? "Converting Excel + structuring…"
-      : "Structuring…",
+      ? "Converting spreadsheet…"
+      : "Organizing your statement…",
     "structuring",
     file.name,
   );
@@ -166,7 +140,7 @@ async function parseStatementFile(
     if (ai.transactions.length) {
       onProgress({
         percent: 94,
-        label: "Normalizing complete…",
+        label: "Almost done…",
         stage: "ranking",
         detail: `${ai.transactions.length} transactions`,
       });
@@ -181,7 +155,7 @@ async function parseStatementFile(
       );
       onProgress({
         percent: 90,
-        label: "Using local parse…",
+        label: "Preparing rankings…",
         stage: "ranking",
         detail: file.name,
       });
@@ -189,11 +163,11 @@ async function parseStatementFile(
     }
     throw aiErr instanceof Error
       ? aiErr
-      : new Error("Failed to structure statement.");
+      : new Error("Could not read that statement. Try Excel (.xlsx) or CSV.");
   }
 
   if (local?.transactions.length) return local;
-  throw new Error("No transactions found after local + OpenAI parse.");
+  throw new Error("No transactions found in that statement.");
 }
 
 export type DashboardView = "overview" | "people" | "transactions" | "insights";

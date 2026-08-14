@@ -9,7 +9,7 @@ type ApiResponse = {
   error?: string;
 };
 
-/** Send a statement to the server for OpenAI → Transaction[] structuring. */
+/** Send a statement to the server for structuring into Transaction[]. */
 export async function structureStatementViaApi(file: File): Promise<ParseResult> {
   const form = new FormData();
   form.append("file", file, file.name);
@@ -21,11 +21,13 @@ export async function structureStatementViaApi(file: File): Promise<ParseResult>
 
   const data = (await res.json().catch(() => ({}))) as ApiResponse;
   if (!res.ok) {
-    throw new Error(data.error || "Failed to structure statement with OpenAI.");
+    throw new Error(
+      data.error || "Could not read that statement. Try Excel (.xlsx) or CSV.",
+    );
   }
 
   if (!data.transactions || !data.meta) {
-    throw new Error("AI structuring returned an incomplete payload.");
+    throw new Error("Could not read transactions from that statement.");
   }
 
   return {

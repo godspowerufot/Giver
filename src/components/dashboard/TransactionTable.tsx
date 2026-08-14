@@ -53,7 +53,7 @@ export function TransactionTable() {
     <Panel>
       <PanelHeader
         title="Transactions"
-        subtitle="Recent activity from your local parse"
+        subtitle="Recent activity from your statement"
         action={filterBar}
       />
 

@@ -16,7 +16,7 @@ function getClient() {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new Error(
-      "AI structuring is not configured. Add OPENAI_API_KEY to .env.local.",
+      "Could not finish reading that statement right now. Try again later, or upload an OPay/wallet Excel or CSV.",
     );
   }
   return new OpenAI({ apiKey });
@@ -150,14 +150,14 @@ ${sheetChunk}`,
   });
 
   const text = response.choices[0]?.message?.content?.trim() ?? "";
-  if (!text) throw new Error("OpenAI returned an empty response.");
+  if (!text) throw new Error("Could not read that statement chunk. Try again.");
   return text;
 }
 
 function parseChunkOrThrow(raw: string, fileName: string): ParseResult {
   const parsed = parseAiStatementText(raw, fileName);
   if (!parsed.transactions.length) {
-    throw new Error("AI returned JSON with zero usable transactions.");
+    throw new Error("No usable transactions found in that statement.");
   }
   return parsed;
 }
@@ -207,7 +207,7 @@ async function structureOneChunk(
   } catch (err) {
     if (isCreditsError(err)) {
       throw new OpenAICreditsError(
-        "OpenAI has no credits left. Add billing, or upload an OPay/wallet CSV so Giver can parse locally.",
+        "Could not finish reading that statement right now. Try again later, or upload an OPay/wallet Excel or CSV.",
       );
     }
     throw err;
@@ -362,7 +362,7 @@ If there are many rows, prioritize complete valid JSON over listing every single
       typeof response.output_text === "string"
         ? response.output_text.trim()
         : "";
-    if (!text) throw new Error("OpenAI returned an empty response.");
+    if (!text) throw new Error("Could not read that statement. Try again.");
     return text;
   } finally {
     await client.files.delete(uploaded.id).catch(() => undefined);
@@ -608,6 +608,6 @@ export async function structureStatementWithOpenAI(
   }
 
   throw new Error(
-    "Could not read that Excel file with OpenAI. Try exporting as .xlsx or .csv.",
+    "Could not read that Excel file. Try exporting as .xlsx or .csv.",
   );
 }
