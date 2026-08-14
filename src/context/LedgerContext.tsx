@@ -65,17 +65,34 @@ async function parseStatementFile(
     detail: file.name,
   });
 
+  const lower = file.name.toLowerCase();
+  const isCsv = lower.endsWith(".csv") || file.type === "text/csv";
+  // Browser ExcelJS on big bank XLSX is slow and often useless — skip unless
+  // the filename looks like a fintech wallet we can parse locally.
+  const likelyLocalWallet =
+    isCsv ||
+    /opay|palmpay|moniepoint|kuda|fairmoney/.test(lower);
+
   let local: ParseResult | null = null;
-  try {
+  if (likelyLocalWallet) {
+    try {
+      onProgress({
+        percent: 18,
+        label: "Reading spreadsheet…",
+        stage: "reading",
+        detail: file.name,
+      });
+      local = await parseLedgerFile(file);
+    } catch {
+      local = null;
+    }
+  } else {
     onProgress({
       percent: 18,
-      label: "Reading spreadsheet…",
+      label: "Preparing Excel…",
       stage: "reading",
-      detail: file.name,
+      detail: "Fast path — skip heavy local Excel",
     });
-    local = await parseLedgerFile(file);
-  } catch {
-    local = null;
   }
 
   onProgress({
@@ -118,14 +135,14 @@ async function parseStatementFile(
           rows: local.sourceRowCount,
           txs: local.transactions.length,
         }
-      : { local: "failed" },
+      : { local: likelyLocalWallet ? "failed" : "skipped" },
   );
 
   const stopTicker = startProgressTicker(
     onProgress,
     38,
     88,
-    "Structuring…",
+    lower.endsWith(".xlsx") ? "Converting Excel + structuring…" : "Structuring…",
     "structuring",
     file.name,
   );

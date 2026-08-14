@@ -237,12 +237,12 @@ function excelCellValue(value: ExcelJS.CellValue): unknown {
 
 function worksheetToMatrix(ws: ExcelJS.Worksheet): unknown[][] {
   const matrix: unknown[][] = [];
-  ws.eachRow({ includeEmpty: true }, (row) => {
-    const values = row.values as ExcelJS.CellValue[];
+  ws?.eachRow?.({ includeEmpty: true }, (row) => {
+    const values = (row?.values ?? []) as ExcelJS.CellValue[];
     const line: unknown[] = [];
-    const len = Math.max(values.length - 1, 0);
+    const len = Math.max((values?.length ?? 1) - 1, 0);
     for (let i = 1; i <= len; i++) {
-      line.push(excelCellValue(values[i]));
+      line.push(excelCellValue(values?.[i]));
     }
     matrix.push(line);
   });
@@ -316,16 +316,17 @@ async function parseWorkbook(file: File): Promise<ParseResult> {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
 
-  if (!workbook.worksheets.length) {
+  const worksheets = workbook?.worksheets ?? [];
+  if (!worksheets.length) {
     throw new Error("No worksheet found in workbook");
   }
 
-  const sheets = workbook.worksheets.map((ws) => worksheetToMatrix(ws));
+  const sheets = worksheets.map((ws) => worksheetToMatrix(ws));
   const matrix = mergeWorkbookMatrices(sheets);
-  const sheetName = workbook.worksheets.map((ws) => ws.name).join(" + ");
+  const sheetName = worksheets.map((ws) => ws?.name ?? "Sheet").join(" + ");
 
   console.info(
-    `[giver] Excel ${file.name}: ${workbook.worksheets.length} sheet(s) → ${matrix.length} rows`,
+    `[giver] Excel ${file.name}: ${worksheets.length} sheet(s) → ${matrix.length} rows`,
   );
 
   return parseFromMatrix(matrix, file.name, sheetName);

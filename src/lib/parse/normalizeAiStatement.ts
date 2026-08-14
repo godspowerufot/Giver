@@ -40,7 +40,13 @@ const KINDS = new Set<TransactionKind>([
 function asNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
-    const cleaned = value.replace(/,/g, "").replace(/[₦N$£€]/gi, "").trim();
+    const cleaned = value
+      .replace(/,/g, "")
+      .replace(/[₦N$£€]/gi, "")
+      .replace(/\bNGN\b/gi, "")
+      .replace(/\s/g, "")
+      .trim();
+    if (!cleaned || cleaned === "-" || cleaned === "--") return null;
     const n = Number(cleaned);
     return Number.isFinite(n) ? n : null;
   }
@@ -68,16 +74,140 @@ function asKind(value: unknown, description: string): TransactionKind {
   return classifyKind(description);
 }
 
-function extractJsonObject(text: string): unknown {
+function extractJsonCandidate(text: string): string {
   const trimmed = text.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = fenced?.[1]?.trim() ?? trimmed;
   const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
+  if (start === -1) {
     throw new Error("AI did not return structured JSON.");
   }
-  return JSON.parse(candidate.slice(start, end + 1));
+  const end = candidate.lastIndexOf("}");
+  if (end > start) return candidate.slice(start, end + 1);
+  // Truncated response — keep from first `{` and try to repair below.
+  return candidate.slice(start);
+}
+
+function closeOpenJson(fragment: string): string {
+  let inString = false;
+  let escape = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < fragment.length; i++) {
+    const ch = fragment[i]!;
+    if (inString) {
+      if (escape) {
+        escape = false;
+      } else if (ch === "\\") {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{" || ch === "[") stack.push(ch);
+    if (ch === "}" || ch === "]") stack.pop();
+  }
+
+  let out = fragment;
+  if (inString) out += '"';
+  // Drop a trailing comma before we close.
+  out = out.replace(/,\s*$/, "");
+  while (stack.length) {
+    const open = stack.pop();
+    out += open === "{" ? "}" : "]";
+  }
+  return out;
+}
+
+/** Pull complete transaction objects from a truncated AI payload. */
+function salvageTransactionsPayload(text: string): unknown | null {
+  const txKey = text.search(/"transactions"\s*:/);
+  if (txKey < 0) return null;
+  const afterKey = text.slice(txKey);
+  const arrStart = afterKey.indexOf("[");
+  if (arrStart < 0) return null;
+  const arrBody = afterKey.slice(arrStart + 1);
+
+  const transactions: unknown[] = [];
+  let i = 0;
+  while (i < arrBody.length) {
+    while (i < arrBody.length && /[\s,]/.test(arrBody[i]!)) i++;
+    if (arrBody[i] === "]") break;
+    if (arrBody[i] !== "{") break;
+
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    const start = i;
+    let end = -1;
+    for (; i < arrBody.length; i++) {
+      const ch = arrBody[i]!;
+      if (inString) {
+        if (escape) escape = false;
+        else if (ch === "\\") escape = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+      if (ch === "{") depth++;
+      if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          end = i + 1;
+          i++;
+          break;
+        }
+      }
+    }
+    if (end < 0) break;
+    try {
+      transactions.push(JSON.parse(arrBody.slice(start, end)));
+    } catch {
+      break;
+    }
+  }
+
+  if (!transactions.length) return null;
+  return {
+    accountName: null,
+    accountNumber: null,
+    period: null,
+    transactions,
+  };
+}
+
+function extractJsonObject(text: string): unknown {
+  const candidate = extractJsonCandidate(text);
+
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    /* repair / salvage below */
+  }
+
+  try {
+    return JSON.parse(closeOpenJson(candidate));
+  } catch {
+    /* salvage below */
+  }
+
+  const salvaged = salvageTransactionsPayload(candidate);
+  if (salvaged) {
+    console.warn(
+      "[giver] AI JSON was truncated; salvaged complete transactions only",
+    );
+    return salvaged;
+  }
+
+  throw new Error("AI did not return structured JSON.");
 }
 
 export function normalizeAiStatement(
@@ -93,7 +223,18 @@ export function normalizeAiStatement(
 
   data.transactions.forEach((row, index) => {
     const description = String(row.description ?? "").trim() || "Transaction";
-    const amount = Math.abs(asNumber(row.amount) ?? 0);
+    // Prefer explicit amount; some models put debit/credit in odd fields.
+    let amount = Math.abs(asNumber(row.amount) ?? 0);
+    if (!amount) {
+      const raw = row as Record<string, unknown>;
+      amount = Math.abs(
+        asNumber(raw.debit) ??
+          asNumber(raw.credit) ??
+          asNumber(raw.Debit) ??
+          asNumber(raw.Credit) ??
+          0,
+      );
+    }
     if (!amount) return;
 
     const direction = asDirection(row.direction);
@@ -179,6 +320,8 @@ Rules:
   (e.g. "T EDWIN MICHEAL", "CIP/CR/USSD/ABRAHAM UDO BILL/OPAY" → "ABRAHAM UDO BILL",
   "Fincra Technologies Limited"). Use null for pure fees/airtime/SMS with no person.
 - description: keep readable but concise (one line when possible).
+- Keep JSON compact: short descriptions, null for unused optional fields.
+- For a CHUNK of rows: only extract rows in that chunk; still return full JSON shape.
 - kind: fee for charges/VAT/stamp duty; bill for airtime/data/utilities/subscriptions;
   transfer for person/business payments; other otherwise.
 - Column aliases (non-exhaustive): recipient/payee/beneficiary/merchant → counterparty;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { formatNaira, formatPercent } from "@/lib/format";
 import type { CardMeme } from "@/lib/cardMemes";
 
@@ -16,6 +16,8 @@ type MemeCardFaceProps = {
   txnCount: number;
   foot: string;
   burstKey?: number;
+  /** Social share icons (top-right inside the card) */
+  shareIcons?: ReactNode;
 };
 
 export function MemeCardFace({
@@ -30,12 +32,15 @@ export function MemeCardFace({
   txnCount,
   foot,
   burstKey = 0,
+  shareIcons,
 }: MemeCardFaceProps) {
   return (
     <div
       key={burstKey}
       className="relative overflow-hidden rounded-2xl border border-white/20 bg-[#0c0c0e]"
     >
+      {shareIcons}
+
       <div className="cele-sparks pointer-events-none absolute inset-0 z-20" aria-hidden>
         {Array.from({ length: 14 }).map((_, i) => (
           <span
@@ -54,8 +59,8 @@ export function MemeCardFace({
           className="h-full w-full object-cover object-center"
           draggable={false}
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-black/25" />
-        <p className="absolute left-3 top-3 rounded-md bg-black/55 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-200 backdrop-blur-sm">
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-[#0c0c0e] via-transparent to-black/25" />
+        <p className="absolute left-3 top-3 max-w-[55%] rounded-md bg-black/55 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-200 backdrop-blur-sm">
           Naija skit
         </p>
         <p className="absolute bottom-3 left-3 right-3 text-left text-xs font-medium text-white/90 drop-shadow sm:text-sm">

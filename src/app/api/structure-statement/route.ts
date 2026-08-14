@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import { StatementTooLargeError } from "@/lib/parse/statementLimits";
 import { structureStatementWithOpenAI } from "@/lib/parse/structureWithOpenAI";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
-const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_BYTES = 8 * 1024 * 1024; // 8MB — year dumps are usually bigger / denser
 
 function isAllowed(file: File) {
   const name = file.name.toLowerCase();
@@ -33,7 +34,10 @@ export async function POST(request: Request) {
 
     if (file.size <= 0 || file.size > MAX_BYTES) {
       return NextResponse.json(
-        { error: "File must be under 20MB." },
+        {
+          error:
+            "File too large (max 8MB). Export 1–2 months — maximum 5 months — as Excel or CSV.",
+        },
         { status: 400 },
       );
     }
@@ -58,6 +62,9 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("[structure-statement]", err);
+    if (err instanceof StatementTooLargeError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     const message =
       err instanceof Error ? err.message : "Failed to structure statement.";
     return NextResponse.json({ error: message }, { status: 500 });

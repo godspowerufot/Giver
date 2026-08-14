@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Outfit, Syne } from "next/font/google";
 import { LedgerProvider } from "@/context/LedgerContext";
 import { ToastProvider } from "@/context/ToastContext";
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <ToastHost />
           </LedgerProvider>
         </ToastProvider>
+        <Analytics />
       </body>
     </html>
   );

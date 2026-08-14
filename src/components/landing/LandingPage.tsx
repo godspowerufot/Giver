@@ -4,7 +4,7 @@ import { useCallback, useId, type ReactNode } from "react";
 import { ParseProgressOverlay } from "@/components/upload/ParseProgressOverlay";
 import { useToast } from "@/context/ToastContext";
 import { useLedger } from "@/hooks/useLedger";
-import { SPREADSHEET_TOAST } from "@/lib/messages";
+import { SPREADSHEET_TOAST, FINTECH_PREFER_UI } from "@/lib/messages";
 import { isStatementFile } from "@/lib/parse/parseFile";
 
 const ACCEPT =
@@ -96,8 +96,11 @@ export function LandingPage() {
         </div>
 
         <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-8 text-center sm:px-8 sm:pb-14 sm:pt-14 md:pt-16">
-          <p className="landing-fade text-[10px] uppercase tracking-[0.3em] text-zinc-500 sm:text-xs">
-            Excel · CSV · spreadsheet
+          <p
+            className="landing-fade mx-auto max-w-lg rounded-md border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-[11px] leading-snug text-amber-100 sm:text-xs"
+            role="note"
+          >
+            {FINTECH_PREFER_UI}
           </p>
 
           <h1 className="landing-fade mt-4 font-[family-name:var(--font-display)] text-6xl leading-[0.92] tracking-[-0.07em] text-white sm:text-8xl md:text-[9rem] lg:text-[11rem]">
@@ -133,7 +136,7 @@ export function LandingPage() {
               {busy ? "E dey work…" : "Drop Excel or CSV here"}
             </UploadButton>
             <p className="text-xs text-zinc-600 sm:text-sm">
-              .xlsx · .xls · .csv · PDF?{" "}
+              .xlsx · .xls · .csv · best 1–2 months · max 5 months · PDF?{" "}
               <a
                 href="https://www.ilovepdf.com/pdf_to_excel"
                 target="_blank"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CardShareIcons } from "@/components/dashboard/CardShareIcons";
 import { MemeCardFace } from "@/components/dashboard/MemeCardFace";
 import { Button } from "@/components/ui/Button";
 import { Panel, PanelHeader } from "@/components/ui/Panel";
@@ -11,6 +12,7 @@ import { fetchCardJoke } from "@/lib/cardJokeClient";
 import type { CelebrationLines } from "@/lib/celebrationCopy";
 import { pickCardMeme, type CardMeme } from "@/lib/cardMemes";
 import { formatNaira, formatPercent } from "@/lib/format";
+import type { ShareCardPayload } from "@/lib/shareCard";
 
 function CloseIcon() {
   return (
@@ -48,7 +50,15 @@ function RefreshIcon() {
 export function ThankYouCard() {
   const { insight } = useLedger();
   const { toast } = useToast();
-  const { share, busy: sharing, copied } = useShareCardLink();
+  const {
+    share,
+    shareWhatsApp,
+    shareGmail,
+    shareX,
+    shareInstagram,
+    busy: sharing,
+    copied,
+  } = useShareCardLink();
   const top = insight?.topSenders[0];
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<CelebrationLines | null>(null);
@@ -57,6 +67,20 @@ export function ThankYouCard() {
   const [loadingJoke, setLoadingJoke] = useState(false);
 
   const sharePct = useMemo(() => (top ? top.shareOfReceived * 100 : 0), [top]);
+
+  const payload = useCallback((): ShareCardPayload | null => {
+    if (!top || !lines) return null;
+    return {
+      k: "thanks",
+      n: top.name,
+      h: lines.headline,
+      r: lines.reply,
+      p: sharePct,
+      a: top.received,
+      c: top.receivedCount,
+      m: meme.id,
+    };
+  }, [top, lines, sharePct, meme.id]);
 
   const loadJoke = useCallback(async () => {
     if (!top) return;
@@ -96,21 +120,23 @@ export function ThankYouCard() {
   }, [open]);
 
   const shareCard = useCallback(async () => {
-    if (!top || !lines) return;
-    const result = await share({
-      k: "thanks",
-      n: top.name,
-      h: lines.headline,
-      r: lines.reply,
-      p: sharePct,
-      a: top.received,
-      c: top.receivedCount,
-      m: meme.id,
-    });
+    const data = payload();
+    if (!data) return;
+    const result = await share(data);
     if (result.copied) {
       toast("Link copied — send it so they can open the card", "info");
     }
-  }, [top, lines, share, sharePct, toast, meme.id]);
+  }, [payload, share, toast]);
+
+  const runShare = useCallback(
+    async (fn: (p: ShareCardPayload) => Promise<unknown>, note?: string) => {
+      const data = payload();
+      if (!data) return;
+      await fn(data);
+      if (note) toast(note, "info");
+    },
+    [payload, toast],
+  );
 
   if (!top) return null;
 
@@ -197,6 +223,20 @@ export function ThankYouCard() {
               amount={top.received}
               txnCount={top.receivedCount}
               foot="Respect · from Giver"
+              shareIcons={
+                <CardShareIcons
+                  disabled={!lines || sharing || loadingJoke}
+                  onWhatsApp={() => void runShare(shareWhatsApp)}
+                  onGmail={() => void runShare(shareGmail)}
+                  onInstagram={() =>
+                    void runShare(
+                      shareInstagram,
+                      "Link copied — paste am on Instagram",
+                    )
+                  }
+                  onX={() => void runShare(shareX)}
+                />
+              }
             />
 
             <div className="mt-3 sm:mt-4">
@@ -206,13 +246,13 @@ export function ThankYouCard() {
                 onClick={() => void shareCard()}
               >
                 {sharing
-                  ? "Opening share…"
+                  ? "Opening…"
                   : copied
                     ? "Link copied"
-                    : "Share card link"}
+                    : "Copy / share link"}
               </Button>
               <p className="mt-2 text-center text-[11px] text-zinc-500">
-                They open the meme skit on Giver — no download
+                Or use the icons on the card — WhatsApp, Gmail, Instagram, X
               </p>
             </div>
           </div>
