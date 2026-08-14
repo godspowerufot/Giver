@@ -4,7 +4,6 @@ import {
   parseAiStatementText,
 } from "@/lib/parse/normalizeAiStatement";
 import type { ParseResult } from "@/lib/parse/parseFile";
-import { assertStatementWithinLimit } from "@/lib/parse/statementLimits";
 import OpenAI, { toFile } from "openai";
 
 /** Keep each OpenAI sheet/text chunk small so JSON responses don't truncate. */
@@ -280,7 +279,7 @@ async function structureDelimitedText(
 
   if (!parts.length) {
     throw new Error(
-      "Could not read money rows from that statement. Export 1–2 months (max 5) as a fresh .xlsx or .csv and try again.",
+      "Could not read money rows from that statement. Try a fresh .xlsx or .csv export and upload again.",
     );
   }
 
@@ -558,9 +557,7 @@ export async function structureStatementWithOpenAI(
 
   if (name.endsWith(".csv") || file.type === "text/csv") {
     console.info(`[giver] OpenAI structuring CSV ${file.name}`);
-    const text = await file.text();
-    assertStatementWithinLimit(text);
-    return structureDelimitedText(file.name, text);
+    return structureDelimitedText(file.name, await file.text());
   }
 
   // .xlsx: always sheet→text in small chunks (avoids truncated whole-file JSON).
@@ -569,7 +566,6 @@ export async function structureStatementWithOpenAI(
       `[giver] OpenAI structuring Excel via sheet→text for ${file.name}`,
     );
     const csvLike = await workbookToCsvText(file);
-    assertStatementWithinLimit(csvLike);
     return structureDelimitedText(file.name, csvLike);
   }
 

@@ -136,7 +136,7 @@ export function LandingPage() {
               {busy ? "E dey work…" : "Drop Excel or CSV here"}
             </UploadButton>
             <p className="text-xs text-zinc-600 sm:text-sm">
-              .xlsx · .xls · .csv · best 1–2 months · max 5 months · PDF?{" "}
+              .xlsx · .xls · .csv · large files OK · PDF?{" "}
               <a
                 href="https://www.ilovepdf.com/pdf_to_excel"
                 target="_blank"

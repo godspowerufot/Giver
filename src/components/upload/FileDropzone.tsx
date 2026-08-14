@@ -2,7 +2,7 @@
 
 import { useCallback, useId, useState } from "react";
 import { useToast } from "@/context/ToastContext";
-import { SPREADSHEET_TOAST, STATEMENT_RANGE_UI, FINTECH_PREFER_UI } from "@/lib/messages";
+import { SPREADSHEET_TOAST, FINTECH_PREFER_UI } from "@/lib/messages";
 import { isStatementFile } from "@/lib/parse/parseFile";
 import { useLedger } from "@/hooks/useLedger";
 
@@ -96,9 +96,6 @@ export function FileDropzone({
           <p className="mx-auto mt-3 max-w-md border-l-2 border-amber-400/70 pl-2.5 text-left text-[11px] leading-snug text-amber-100/90">
             {FINTECH_PREFER_UI}
           </p>
-          <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-zinc-500">
-            {STATEMENT_RANGE_UI}
-          </p>
           <div className="relative z-20 mt-6 flex justify-center sm:mt-8">
             <label
               htmlFor={inputId}
@@ -122,8 +119,7 @@ export function FileDropzone({
             />
           </div>
           <p className="mx-auto mt-5 max-w-md text-xs leading-relaxed text-zinc-500">
-            Progress: upload → check format → structure → rankings. Prefer monthly
-            exports.
+            Progress: upload → check format → structure → rankings. Large files OK.
           </p>
         </div>
       </div>
